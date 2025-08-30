@@ -1,7 +1,0 @@
-{
-  "version": 3,
-  "sources": [],
-  "sections": [
-    {"offset": {"line": 3, "column": 0}, "map": {"version":3,"sources":[],"names":[],"mappings":"","debugId":null}},
-    {"offset": {"line": 15, "column": 0}, "map": {"version":3,"sources":["file:///C:/Users/valen/Documents/stockly/frontend/src/app/home/page.tsx"],"sourcesContent":["\r\nexport default function Home() {\r\n  return (\r\n    <div>\r\n        <h1>HOME</h1>\r\n    </div>\r\n  );\r\n}\r\n"],"names":[],"mappings":";;;;;;AACe,SAAS;IACtB,qBACE,8OAAC;kBACG,cAAA,8OAAC;sBAAG;;;;;;;;;;;AAGZ","debugId":null}}]
-}
