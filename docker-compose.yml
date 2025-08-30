@@ -1,0 +1,79 @@
+version: "3.9"
+
+services:
+    # Define the services for the application
+  backend:
+    build: ./backend
+    container_name: backend-stockly
+    restart: always
+    depends_on:
+      - mongo
+      - postgres
+    environment:
+      - MONGO_URL=mongodb://mongo:27017/mydb # CONFIGURAR
+      - POSTGRES_URL=postgresql://user:password@postgres:5432/mydb # CONFIGURAR
+    networks:
+      - bd-net
+      - backend-net
+
+  frontend:
+    build: ./frontend
+    container_name: frontend-stockly
+    restart: always
+    networks:
+      - frontend-net
+
+  # Reverse proxy service using Nginx
+  nginx:
+    image: nginx:1.29.1-alpine-slim
+    container_name: nginx-stockly
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - backend
+      - frontend
+    networks:
+      - backend-net
+      - frontend-net
+
+  # Database services
+
+  mongo:
+    image: mongo:6
+    container_name: mongo-stockly
+    restart: always
+    ports:
+      - "27017:27017" # Eliminar exposición en producción
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - bd-net
+
+  postgres:
+    image: postgres:15
+    container_name: postgres-stockly
+    restart: always
+    environment: # CONFIGURAR
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: mydb
+    ports:
+      - "5432:5432" # Eliminar exposición en producción
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - bd-net
+
+volumes:
+  mongo-data:
+  postgres-data:
+
+networks:
+  bd-net:
+    driver: bridge
+  backend-net:
+    driver: bridge
+  frontend-net:
+    driver: bridge
