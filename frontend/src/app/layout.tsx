@@ -6,6 +6,7 @@ export const metadata: Metadata = {
   description: "PONER METADATOS ACA", // EDITAR METADATOS
 };
 
+
 export default function RootLayout({
   children,
 }: Readonly<{
