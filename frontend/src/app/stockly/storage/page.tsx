@@ -1,7 +1,7 @@
 export default function StoragePage() {
   return (
     <div>
-      StoragePage
+      <h1>StoragePage</h1>
     </div>
   )
 }
