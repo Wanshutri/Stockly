@@ -1,117 +1,90 @@
 import { Request, Response, NextFunction } from 'express';
-import { clientes, Cliente } from '../models/Cliente';
+import prisma from '../prisma/Client';
 
-// Create a new cliente
-export const createCliente = (req: Request, res: Response, next: NextFunction) => {
-    try {
-        const { nombre, email, telefono } = req.body;
-
-        if (!nombre || !email || telefono === undefined) {
-            res.status(400).json({ message: 'nombre, email y telefono son obligatorios' });
-            return;
-        }
-
-        const telefonoNum = Number(telefono);
-        if (Number.isNaN(telefonoNum)) {
-            res.status(400).json({ message: 'telefono debe ser un número' });
-            return;
-        }
-
-        const newCliente: Cliente = {
-            id: Date.now(),
-            nombre,
-            email,
-            telefono: telefonoNum,
-        };
-
-        clientes.push(newCliente);
-        res.status(201).json(newCliente);
-    } catch (error) {
-        next(error);
+// Create
+export const createCliente = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { nombre, email, telefono } = req.body;
+    if (!nombre || !email || telefono === undefined) {
+      return res.status(400).json({ message: 'nombre, email y telefono son obligatorios' });
     }
+    const telefonoNum = Number(telefono);
+    if (Number.isNaN(telefonoNum)) return res.status(400).json({ message: 'telefono debe ser un número' });
+
+    const cliente = await prisma.cliente.create({
+      data: { nombre, email, telefono: telefonoNum }
+    });
+    return res.status(201).json(cliente);
+  } catch (err: any) {
+    if (err.code === 'P2002') { // unique constraint failed
+      return res.status(409).json({ message: 'email ya registrado' });
+    }
+    next(err);
+  }
 };
 
-// Get all clientes
-export const getClientes = (req: Request, res: Response, next: NextFunction) => {
-    try {
-        res.json(clientes);
-    } catch (error) {
-        next(error);
-    }
+// Get all
+export const getClientes = async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    const clientes = await prisma.cliente.findMany();
+    res.json(clientes);
+  } catch (err) {
+    next(err);
+  }
 };
 
-// Get cliente by id
-export const getClienteById = (req: Request, res: Response, next: NextFunction) => {
-    try {
-        const id = parseInt(req.params.id, 10);
-        if (Number.isNaN(id)) {
-            res.status(400).json({ message: 'id inválido' });
-            return;
-        }
+// Get by id
+export const getClienteById = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = Number(req.params.id);
+    if (Number.isNaN(id)) return res.status(400).json({ message: 'id inválido' });
 
-        const cliente = clientes.find((c) => c.id === id);
-        if (!cliente) {
-            res.status(404).json({ message: 'Cliente no encontrado' });
-            return;
-        }
-        res.json(cliente);
-    } catch (error) {
-        next(error);
-    }
+    const cliente = await prisma.cliente.findUnique({ where: { id } });
+    if (!cliente) return res.status(404).json({ message: 'Cliente no encontrado' });
+    res.json(cliente);
+  } catch (err) {
+    next(err);
+  }
 };
 
-// Update cliente
-export const updateCliente = (req: Request, res: Response, next: NextFunction) => {
-    try {
-        const id = parseInt(req.params.id, 10);
-        if (Number.isNaN(id)) {
-            res.status(400).json({ message: 'id inválido' });
-            return;
-        }
+// Update
+export const updateCliente = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = Number(req.params.id);
+    if (Number.isNaN(id)) return res.status(400).json({ message: 'id inválido' });
 
-        const { nombre, email, telefono } = req.body;
-        const clienteIndex = clientes.findIndex((c) => c.id === id);
-        if (clienteIndex === -1) {
-            res.status(404).json({ message: 'Cliente no encontrado' });
-            return;
-        }
-
-        // Update only provided fields
-        if (nombre !== undefined) clientes[clienteIndex].nombre = nombre;
-        if (email !== undefined) clientes[clienteIndex].email = email;
-        if (telefono !== undefined) {
-            const telefonoNum = Number(telefono);
-            if (Number.isNaN(telefonoNum)) {
-                res.status(400).json({ message: 'telefono debe ser un número' });
-                return;
-            }
-            clientes[clienteIndex].telefono = telefonoNum;
-        }
-
-        res.json(clientes[clienteIndex]);
-    } catch (error) {
-        next(error);
+    const { nombre, email, telefono } = req.body;
+    const data: any = {};
+    if (nombre !== undefined) data.nombre = nombre;
+    if (email !== undefined) data.email = email;
+    if (telefono !== undefined) {
+      const telefonoNum = Number(telefono);
+      if (Number.isNaN(telefonoNum)) return res.status(400).json({ message: 'telefono debe ser un número' });
+      data.telefono = telefonoNum;
     }
+
+    const updated = await prisma.cliente.update({
+      where: { id },
+      data
+    });
+    res.json(updated);
+  } catch (err: any) {
+    if (err.code === 'P2025') return res.status(404).json({ message: 'Cliente no encontrado' });
+    if (err.code === 'P2002') return res.status(409).json({ message: 'email ya registrado' });
+    next(err);
+  }
 };
 
-// Delete cliente
-export const deleteCliente = (req: Request, res: Response, next: NextFunction) => {
-    try {
-        const id = parseInt(req.params.id, 10);
-        if (Number.isNaN(id)) {
-            res.status(400).json({ message: 'id inválido' });
-            return;
-        }
+// Delete
+export const deleteCliente = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = Number(req.params.id);
+    if (Number.isNaN(id)) return res.status(400).json({ message: 'id inválido' });
 
-        const index = clientes.findIndex((c) => c.id === id);
-        if (index === -1) {
-            res.status(404).json({ message: 'Cliente no encontrado' });
-            return;
-        }
-
-        const deleted = clientes.splice(index, 1)[0];
-        res.json(deleted);
-    } catch (error) {
-        next(error);
-    }
+    const deleted = await prisma.cliente.delete({ where: { id } });
+    res.json(deleted);
+  } catch (err: any) {
+    if (err.code === 'P2025') return res.status(404).json({ message: 'Cliente no encontrado' });
+    next(err);
+  }
 };
