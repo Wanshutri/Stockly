@@ -6,7 +6,7 @@
   "scripts": {
     "build": "tsc",
     "start": "node dist/server.js",
-    "dev": "nodemon --watch 'src/**/*.ts' --exec \"npx ts-node\" src/server.ts",
+    "dev": "nodemon src/server.ts",
     "lint": "eslint 'src/**/*.ts'"
   },
   "keywords": [],
@@ -16,9 +16,8 @@
   "devDependencies": {
     "@types/express": "^5.0.3",
     "@types/node": "^24.5.2",
-    "dotenv": "^17.2.2",
+    "@types/pg": "^8.6.6",
     "eslint": "^9.36.0",
-    "express": "^5.1.0",
     "install": "^0.13.0",
     "nodemon": "^3.1.10",
     "npm": "^11.6.1",
@@ -27,7 +26,8 @@
     "typescript": "^5.9.2"
   },
   "dependencies": {
-    "@prisma/client": "^6.16.2",
-    "prisma": "^6.16.2"
+    "pg": "^8.11.0",
+    "dotenv": "^17.2.2",
+    "express": "^5.1.0"
   }
 }
