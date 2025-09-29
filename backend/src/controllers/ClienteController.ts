@@ -1,22 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { query } from '../db/postgres';
-
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-function isNonEmptyString(value: any) {
-  return typeof value === 'string' && value.trim().length > 0;
-}
-
-function normalizePhone(value: any): string | null {
-  if (value === null || value === undefined) return null;
-  // accept numbers or strings; convert to string and remove spaces
-  const s = String(value).replace(/\s+/g, '');
-  return s;
-}
-
-function isValidPhoneDigits(s: string) {
-  return /^\d{9}$/.test(s);
-}
+import { EMAIL_REGEX, isNonEmptyString, isValidPhoneDigits, normalizePhone } from '../utils/validators';
 
 // Create
 export const createCliente = async (req: Request, res: Response, next: NextFunction) => {
@@ -36,7 +20,7 @@ export const createCliente = async (req: Request, res: Response, next: NextFunct
 
     // Uniqueness check
     const existing = await query('SELECT 1 FROM cliente WHERE email = $1 LIMIT 1', [email]);
-  if ((existing?.rowCount ?? 0) > 0) return res.status(409).json({ message: 'email ya registrado' });
+    if ((existing?.rowCount ?? 0) > 0) return res.status(409).json({ message: 'email ya registrado' });
 
     const sql = `INSERT INTO cliente (nombre, email, telefono) VALUES ($1, $2, $3) RETURNING *`;
     const result = await query(sql, [nombre, email, phoneStr]);
@@ -52,7 +36,7 @@ export const createCliente = async (req: Request, res: Response, next: NextFunct
 // Get all
 export const getClientes = async (_req: Request, res: Response, next: NextFunction) => {
   try {
-    const result = await query('SELECT * FROM cliente ORDER BY idCliente ASC');
+    const result = await query('SELECT * FROM cliente');
     res.json(result.rows);
   } catch (err) {
     next(err);
@@ -102,7 +86,7 @@ export const updateCliente = async (req: Request, res: Response, next: NextFunct
     const params: any[] = [];
     let idx = 1;
     if (data.nombre !== undefined) { set.push(`nombre = $${idx++}`); params.push(data.nombre); }
-  if (data.email !== undefined) { set.push(`email = $${idx++}`); params.push(data.email); }
+    if (data.email !== undefined) { set.push(`email = $${idx++}`); params.push(data.email); }
     if (data.telefono !== undefined) { set.push(`telefono = $${idx++}`); params.push(data.telefono); }
 
     if (set.length === 0) return res.status(400).json({ message: 'No hay campos para actualizar' });
@@ -110,7 +94,7 @@ export const updateCliente = async (req: Request, res: Response, next: NextFunct
     // If email is being changed, ensure uniqueness (exclude current record)
     if (data.email !== undefined) {
       const exists = await query('SELECT 1 FROM cliente WHERE email = $1 AND idCliente != $2 LIMIT 1', [data.email, id]);
-  if ((exists?.rowCount ?? 0) > 0) return res.status(409).json({ message: 'email ya registrado' });
+      if ((exists?.rowCount ?? 0) > 0) return res.status(409).json({ message: 'email ya registrado' });
     }
 
     const sql = `UPDATE cliente SET ${set.join(', ')} WHERE idCliente = $${idx} RETURNING *`;
@@ -136,6 +120,21 @@ export const deleteCliente = async (req: Request, res: Response, next: NextFunct
     if (!deleted) return res.status(404).json({ message: 'Cliente no encontrado' });
     res.json(deleted);
   } catch (err: any) {
+    next(err);
+  }
+};
+
+// Get by id
+export const getClienteByEmail = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const email = String(req.body.email).trim().toLowerCase();
+    if (!email) return res.status(400).json({ message: 'Email inválido' });
+
+    const result = await query('SELECT * FROM cliente WHERE email = $1', [email]);
+    const cliente = result.rows[0];
+    if (!cliente) return res.status(404).json({ message: 'Cliente no encontrado' });
+    res.json(cliente);
+  } catch (err) {
     next(err);
   }
 };

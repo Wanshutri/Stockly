@@ -1,0 +1,11 @@
+import { Router } from 'express';
+import { createUsuario, getUsuarios, getUsuarioById, updateUsuario, deleteUsuario, login } from '../controllers/UsuarioController';
+import { authenticate } from '../middlewares/auth';
+const router = Router();
+router.get('/', getUsuarios);
+router.get('/:id', getUsuarioById);
+router.post('/', createUsuario);
+router.post('/login', login);
+router.put('/:id', updateUsuario);
+router.delete('/:id', deleteUsuario);
+export default router;
