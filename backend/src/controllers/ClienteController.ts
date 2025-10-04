@@ -1,34 +1,18 @@
 import { Request, Response, NextFunction } from 'express';
 import { query } from '../db/postgres';
-import { EMAIL_REGEX, isNonEmptyString, isValidPhoneDigits, normalizePhone } from '../utils/validators';
 
-// Create
+// Create cliente via stored procedure
 export const createCliente = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    let { nombre, email, telefono } = req.body;
-    // Trim and basic checks
-    if (!isNonEmptyString(nombre) || !isNonEmptyString(email) || telefono === undefined) {
-      return res.status(400).json({ message: 'nombre, email y telefono son obligatorios y no pueden ser vacíos' });
-    }
-    nombre = nombre.trim();
-    email = email.trim().toLowerCase();
-
-    if (!EMAIL_REGEX.test(email)) return res.status(400).json({ message: 'email con formato inválido' });
-
-    const phoneStr = normalizePhone(telefono);
-    if (!phoneStr || !isValidPhoneDigits(phoneStr)) return res.status(400).json({ message: 'telefono debe contener exactamente 9 dígitos numéricos' });
-
-    // Uniqueness check
-    const existing = await query('SELECT 1 FROM cliente WHERE email = $1 LIMIT 1', [email]);
-    if ((existing?.rowCount ?? 0) > 0) return res.status(409).json({ message: 'email ya registrado' });
-
-    const sql = `INSERT INTO cliente (nombre, email, telefono) VALUES ($1, $2, $3) RETURNING *`;
-    const result = await query(sql, [nombre, email, phoneStr]);
-    return res.status(201).json(result.rows[0]);
+    const { nombre, email, telefono } = req.body;
+    const result = await query('SELECT * FROM create_cliente($1,$2,$3)', [nombre, email, telefono]);
+    const row = result.rows[0];
+    return res.status(201).json(row);
   } catch (err: any) {
-    if (err && err.code === '23505') {
-      return res.status(409).json({ message: 'email ya registrado' });
-    }
+    // 23505 is unique_violation we used for email conflict
+    if (err && err.code === '23505') return res.status(409).json({ message: 'email ya registrado' });
+    // custom raise with ERRCODE '45000' uses text message
+    if (err && err.code === '45000') return res.status(400).json({ message: err.message });
     next(err);
   }
 };
@@ -65,46 +49,13 @@ export const updateCliente = async (req: Request, res: Response, next: NextFunct
     if (Number.isNaN(id)) return res.status(400).json({ message: 'id inválido' });
 
     const { nombre, email, telefono } = req.body;
-    const data: any = {};
-    if (nombre !== undefined) {
-      if (!isNonEmptyString(nombre)) return res.status(400).json({ message: 'nombre no puede ser vacío' });
-      data.nombre = nombre.trim();
-    }
-    if (email !== undefined) {
-      if (!isNonEmptyString(email)) return res.status(400).json({ message: 'email no puede ser vacío' });
-      const emailNorm = email.trim().toLowerCase();
-      if (!EMAIL_REGEX.test(emailNorm)) return res.status(400).json({ message: 'email con formato inválido' });
-      data.email = emailNorm;
-    }
-    if (telefono !== undefined) {
-      const phoneStr = normalizePhone(telefono);
-      if (!phoneStr || !isValidPhoneDigits(phoneStr)) return res.status(400).json({ message: 'telefono debe contener exactamente 9 dígitos numéricos' });
-      data.telefono = phoneStr;
-    }
-
-    const set: string[] = [];
-    const params: any[] = [];
-    let idx = 1;
-    if (data.nombre !== undefined) { set.push(`nombre = $${idx++}`); params.push(data.nombre); }
-    if (data.email !== undefined) { set.push(`email = $${idx++}`); params.push(data.email); }
-    if (data.telefono !== undefined) { set.push(`telefono = $${idx++}`); params.push(data.telefono); }
-
-    if (set.length === 0) return res.status(400).json({ message: 'No hay campos para actualizar' });
-
-    // If email is being changed, ensure uniqueness (exclude current record)
-    if (data.email !== undefined) {
-      const exists = await query('SELECT 1 FROM cliente WHERE email = $1 AND idCliente != $2 LIMIT 1', [data.email, id]);
-      if ((exists?.rowCount ?? 0) > 0) return res.status(409).json({ message: 'email ya registrado' });
-    }
-
-    const sql = `UPDATE cliente SET ${set.join(', ')} WHERE idCliente = $${idx} RETURNING *`;
-    params.push(id);
-    const result = await query(sql, params);
+    const result = await query('SELECT * FROM update_cliente($1,$2,$3,$4)', [id, nombre, email, telefono]);
     const updated = result.rows[0];
     if (!updated) return res.status(404).json({ message: 'Cliente no encontrado' });
     res.json(updated);
   } catch (err: any) {
     if (err && err.code === '23505') return res.status(409).json({ message: 'email ya registrado' });
+    if (err && err.code === '45000') return res.status(400).json({ message: err.message });
     next(err);
   }
 };
@@ -114,12 +65,12 @@ export const deleteCliente = async (req: Request, res: Response, next: NextFunct
   try {
     const id = Number(req.params.id);
     if (Number.isNaN(id)) return res.status(400).json({ message: 'id inválido' });
-
-    const result = await query('DELETE FROM cliente WHERE idCliente = $1 RETURNING *', [id]);
+    const result = await query('SELECT * FROM delete_cliente($1)', [id]);
     const deleted = result.rows[0];
     if (!deleted) return res.status(404).json({ message: 'Cliente no encontrado' });
     res.json(deleted);
   } catch (err: any) {
+    if (err && err.code === '45000') return res.status(400).json({ message: err.message });
     next(err);
   }
 };
