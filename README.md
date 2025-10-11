@@ -1,2 +1,7 @@
-/* Para dependencias de desarrollo, instalar con npm install --save-dev PACKAGE <br>
-para dependencias normales, npm install PACKAGE
+Proyecto Stockly
+
+Se han creado las primeras rutas del proyecto Stockly.
+
+📂 Pages 
+🖼️ Layout 
+📝 Metadata
