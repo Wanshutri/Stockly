@@ -1,8 +1,8 @@
 import { Router } from 'express';
-import { createCompra, getCompras, getCompraById, deleteCompra } from '../controllers/CompraController';
+import { create_compra, get_compras, get_compra_by_id, delete_compra } from '../controllers/CompraController';
 const router = Router();
-router.get('/', getCompras);
-router.get('/:id', getCompraById);
-router.post('/', createCompra);
-router.delete('/:id', deleteCompra);
+router.get('/', get_compras);
+router.get('/:id', get_compra_by_id);
+router.post('/', create_compra);
+router.delete('/:id', delete_compra);
 export default router;

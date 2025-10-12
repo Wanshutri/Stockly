@@ -1,109 +1,138 @@
 import { Request, Response, NextFunction } from 'express';
 import { query } from '../db/postgres';
-import { isNonEmptyString } from '../utils/validators';
+import { is_non_empty_string } from '../utils/validators'; // Importación renombrada
 
-// Crear marca
-export const createMarca = async (req: Request, res: Response, next: NextFunction) => {
+/**
+ * Crear marca
+ */
+export const create_marca = async (request: Request, response: Response, next: NextFunction) => { // Función renombrada
   try {
-    let { nombre_marca } = req.body;
-    if (!isNonEmptyString(nombre_marca)) {
-      return res.status(400).json({ message: 'nombre_marca es obligatorio' });
+    let { nombre_marca } = request.body; // Acceso a body renombrado
+    
+    // Función de validación renombrada
+    if (!is_non_empty_string(nombre_marca)) { 
+      return response.status(400).json({ message: 'nombre_marca es obligatorio' });
     }
+    
     nombre_marca = nombre_marca.trim();
 
-    const result = await query(
-      'INSERT INTO marca (nombre_marca) VALUES ($1) RETURNING id_marca',
-      [nombre_marca]
-    );
+    const insert_sql = 'INSERT INTO marca (nombre_marca) VALUES ($1) RETURNING id_marca'; // Variable SQL renombrada
+    const query_result = await query(insert_sql, [nombre_marca]); // Variable de resultado renombrada
 
-    res.status(201).json({ id_marca: result.rows[0].id_marca, nombre_marca });
-  } catch (err) {
-    next(err);
+    // El objeto de respuesta JSON utiliza snake_case
+    response.status(201).json({ id_marca: query_result.rows[0].id_marca, nombre_marca });
+  } catch (error) { // Variable de error renombrada
+    next(error);
   }
 };
 
-// Obtener todas las marcas
-export const getMarcas = async (_req: Request, res: Response, next: NextFunction) => {
+/**
+ * Obtener todas las marcas
+ */
+export const get_marcas = async (_request: Request, response: Response, next: NextFunction) => { // Función y parámetros renombrados
   try {
-    const result = await query('SELECT * FROM marca ORDER BY id_marca');
-    res.json(result.rows);
-  } catch (err) {
-    next(err);
+    const select_sql = 'SELECT * FROM marca ORDER BY id_marca'; // Variable SQL renombrada
+    const query_result = await query(select_sql); // Variable de resultado renombrada
+    response.json(query_result.rows);
+  } catch (error) {
+    next(error);
   }
 };
 
-// Obtener marca por id
-export const getMarcaById = async (req: Request, res: Response, next: NextFunction) => {
+/**
+ * Obtener marca por id
+ */
+export const get_marca_by_id = async (request: Request, response: Response, next: NextFunction) => { // Función y parámetros renombrados
   try {
-    const id = Number(req.params.id);
-    if (Number.isNaN(id)) return res.status(400).json({ message: 'id inválido' });
-
-    const result = await query('SELECT * FROM marca WHERE id_marca=$1', [id]);
-    const row = result.rows[0];
-    if (!row) return res.status(404).json({ message: 'Marca no encontrada' });
-
-    res.json(row);
-  } catch (err) {
-    next(err);
-  }
-};
-
-// Actualizar marca
-export const updateMarca = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const id = Number(req.params.id);
-    if (Number.isNaN(id)) return res.status(400).json({ message: 'id inválido' });
-
-    let { nombre_marca } = req.body;
-    if (!isNonEmptyString(nombre_marca)) {
-      return res.status(400).json({ message: 'nombre_marca es obligatorio' });
+    const id_marca = Number(request.params.id); // Variable renombrada y acceso a params
+    
+    // 'Number.isNaN' permanece en camelCase ya que es parte de la API estándar de JavaScript.
+    if (Number.isNaN(id_marca)) {
+      return response.status(400).json({ message: 'id inválido' });
     }
+
+    const select_sql = 'SELECT * FROM marca WHERE id_marca=$1'; // Variable SQL renombrada
+    const query_result = await query(select_sql, [id_marca]); // Variable de resultado renombrada
+    
+    const row = query_result.rows[0];
+    
+    if (!row) {
+      return response.status(404).json({ message: 'Marca no encontrada' });
+    }
+
+    response.json(row);
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Actualizar marca
+ */
+export const update_marca = async (request: Request, response: Response, next: NextFunction) => { // Función y parámetros renombrados
+  try {
+    const id_marca = Number(request.params.id); // Variable renombrada y acceso a params
+    
+    if (Number.isNaN(id_marca)) {
+      return response.status(400).json({ message: 'id inválido' });
+    }
+
+    let { nombre_marca } = request.body; // Acceso a body renombrado
+    
+    // Función de validación renombrada
+    if (!is_non_empty_string(nombre_marca)) {
+      return response.status(400).json({ message: 'nombre_marca es obligatorio' });
+    }
+    
     nombre_marca = nombre_marca.trim();
 
     // Validar existencia
-    const exists = await query('SELECT 1 FROM marca WHERE id_marca=$1', [id]);
+    const exists = await query('SELECT 1 FROM marca WHERE id_marca=$1', [id_marca]);
+    
     if (exists.rowCount === 0) {
-      return res.status(404).json({ message: 'Marca no encontrada' });
+      return response.status(404).json({ message: 'Marca no encontrada' });
     }
 
     // Actualizar
-    const result = await query(
-      'UPDATE marca SET nombre_marca=$1 WHERE id_marca=$2 RETURNING *',
-      [nombre_marca, id]
-    );
+    const update_sql = 'UPDATE marca SET nombre_marca=$1 WHERE id_marca=$2 RETURNING *'; // Variable SQL renombrada
+    const query_result = await query(update_sql, [nombre_marca, id_marca]); // Variable de resultado renombrada
 
-    res.json(result.rows[0]);
-  } catch (err) {
-    next(err);
+    response.json(query_result.rows[0]);
+  } catch (error) {
+    next(error);
   }
 };
 
-// Eliminar marca
-export const deleteMarca = async (req: Request, res: Response, next: NextFunction) => {
+/**
+ * Eliminar marca
+ */
+export const delete_marca = async (request: Request, response: Response, next: NextFunction) => { // Función y parámetros renombrados
   try {
-    const id = Number(req.params.id);
-    if (Number.isNaN(id)) return res.status(400).json({ message: 'id inválido' });
+    const id_marca = Number(request.params.id); // Variable renombrada y acceso a params
+    
+    if (Number.isNaN(id_marca)) {
+      return response.status(400).json({ message: 'id inválido' });
+    }
 
     try {
-      const result = await query(
-        'SELECT * FROM eliminar_marca($1)',
-        [id]
-      );
+      const delete_sql = 'SELECT * FROM eliminar_marca($1)'; // Variable SQL renombrada
+      const query_result = await query(delete_sql, [id_marca]); // Variable de resultado renombrada
 
-      const deleted = result.rows[0];
-      res.json({ id_marca: deleted.id_marca, nombre_marca: deleted.nombre_marca });
+      const deleted = query_result.rows[0];
+      // El objeto de respuesta JSON utiliza snake_case
+      response.json({ id_marca: deleted.id_marca, nombre_marca: deleted.nombre_marca }); 
 
-    } catch (err: any) {
+    } catch (error: any) { // Variable de error renombrada
       // Captura las excepciones de PostgreSQL
-      if (err.code === 'NO_DATA_FOUND') {
-        return res.status(404).json({ message: 'Marca no encontrada' });
+      if (error.code === 'NO_DATA_FOUND') {
+        return response.status(404).json({ message: 'Marca no encontrada' });
       }
-      if (err.code === 'foreign_key_violation') {
-        return res.status(400).json({ message: err.message });
+      if (error.code === '23503') { // 'foreign_key_violation' se puede mapear a su código SQLSTATE '23503' o dejar el nombre literal
+        return response.status(400).json({ message: error.message });
       }
-      throw err;
+      throw error;
     }
-  } catch (err) {
-    next(err);
+  } catch (error) {
+    next(error);
   }
 };

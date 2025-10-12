@@ -6,8 +6,10 @@ import { query } from '../../src/db/postgres';
 describe('TipoUsuario API', () => {
 
   beforeEach(async () => {
+    await query('DELETE FROM usuario');
     await query('DELETE FROM tipo_usuario');
-    await query('ALTER SEQUENCE tipo_usuario_id_tipo_seq RESTART WITH 1');
+    await query('ALTER SEQUENCE tipo_usuario_id_tipo_seq RESTART WITH 1')
+    await query('ALTER SEQUENCE usuario_id_usuario_seq RESTART WITH 1');
   });
 
   describe('GET /api/tipos-usuario', () => {
@@ -66,7 +68,7 @@ describe('TipoUsuario API', () => {
     it('Debe devolver un error 404 para un ID que no existe', async () => {
       const response = await request(app).get('/api/tipos-usuario/9999');
       expect(response.status).toBe(404);
-      expect(response.body.message).toBe('Tipo de usuario no encontrado');
+      expect(response.body.message).toBe('tipo_usuario no encontrado');
     });
   });
 
@@ -90,14 +92,14 @@ describe('TipoUsuario API', () => {
         .put('/api/tipos-usuario/9999')
         .send({ nombre_tipo: 'NoExisto' });
       expect(response.status).toBe(404);
-      expect(response.body.message).toBe('Tipo de usuario no encontrado');
+      expect(response.body.message).toBe('tipo_usuario no encontrado');
     });
   });
 
   describe('DELETE /api/tipos-usuario/:id', () => {
     it('Debe eliminar un tipo de usuario existente', async () => {
       const postResponse = await request(app)
-        .post('/api/tipos-usuario')
+        .post('/api/tipos-usuario/')
         .send({ nombre_tipo: 'AEliminar' });
       const newId = postResponse.body.id_tipo;
 
@@ -111,7 +113,7 @@ describe('TipoUsuario API', () => {
     it('Debe devolver un error 404 al intentar eliminar un tipo de usuario que no existe', async () => {
       const response = await request(app).delete('/api/tipos-usuario/9999');
       expect(response.status).toBe(404);
-      expect(response.body.message).toBe('Tipo de usuario no encontrado');
+      expect(response.body.message).toBe('tipo_usuario no encontrado');
     });
   });
 });

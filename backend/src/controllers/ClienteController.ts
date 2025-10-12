@@ -1,91 +1,160 @@
 import { Request, Response, NextFunction } from 'express';
 import { query } from '../db/postgres';
 
-// Create cliente via stored procedure
-export const createCliente = async (req: Request, res: Response, next: NextFunction) => {
+/**
+ * Crear cliente a través de un procedimiento almacenado.
+ */
+export const create_cliente = async (request: Request, response: Response, next: NextFunction) => { // Función renombrada
   try {
-    const { nombre, email, telefono } = req.body;
-    const result = await query('SELECT * FROM create_cliente($1,$2,$3)', [nombre, email, telefono]);
-    const row = result.rows[0];
-    return res.status(201).json(row);
-  } catch (err: any) {
-    // 23505 is unique_violation we used for email conflict
-    if (err && err.code === '23505') return res.status(409).json({ message: 'email ya registrado' });
-    // custom raise with ERRCODE '45000' uses text message
-    if (err && err.code === '45000') return res.status(400).json({ message: err.message });
-    next(err);
+    // Variables desestructuradas renombradas y acceso a body
+    const { nombre, email, telefono } = request.body; 
+    
+    // SQL renombrado: 'create_cliente' (asumo que la función PL/pgSQL es 'create_cliente')
+    const insert_sql = 'SELECT * FROM create_cliente($1, $2, $3)'; 
+    const query_result = await query(insert_sql, [nombre, email, telefono]); // Variable de resultado renombrada
+    
+    const row = query_result.rows[0];
+    return response.status(201).json(row);
+  } catch (error: any) { // Variable de error renombrada
+    // 23505 es unique_violation (conflicto de email)
+    if (error && error.code === '23505') {
+      return response.status(409).json({ message: 'email ya registrado' });
+    }
+    // Manejo de errores personalizados de PostgreSQL (ERRCODE '45000')
+    if (error && error.code === '45000') {
+      return response.status(400).json({ message: error.message });
+    }
+    next(error);
   }
 };
 
-// Get all
-export const getClientes = async (_req: Request, res: Response, next: NextFunction) => {
+/**
+ * Obtener todos los clientes.
+ */
+export const get_clientes = async (_request: Request, response: Response, next: NextFunction) => { // Función y parámetros renombrados
   try {
-    const result = await query('SELECT * FROM cliente');
-    res.json(result.rows);
-  } catch (err) {
-    next(err);
+    const select_sql = 'SELECT * FROM cliente';
+    const query_result = await query(select_sql);
+    response.json(query_result.rows);
+  } catch (error) {
+    next(error);
   }
 };
 
-// Get by id
-export const getClienteById = async (req: Request, res: Response, next: NextFunction) => {
+/**
+ * Obtener cliente por ID.
+ */
+export const get_cliente_by_id = async (request: Request, response: Response, next: NextFunction) => { // Función y parámetros renombrados
   try {
-    const id = Number(req.params.id);
-    if (Number.isNaN(id)) return res.status(400).json({ message: 'id inválido' });
+    const id_cliente = Number(request.params.id); // Variable renombrada
+    
+    if (Number.isNaN(id_cliente)) {
+      return response.status(400).json({ message: 'id inválido' });
+    }
 
-    const result = await query('SELECT * FROM cliente WHERE idCliente = $1', [id]);
-    const cliente = result.rows[0];
-    if (!cliente) return res.status(404).json({ message: 'Cliente no encontrado' });
-    res.json(cliente);
-  } catch (err) {
-    next(err);
+    // SQL renombrado: 'idCliente' -> 'id_cliente'
+    const select_sql = 'SELECT * FROM cliente WHERE id_cliente = $1'; 
+    const query_result = await query(select_sql, [id_cliente]);
+    
+    const cliente = query_result.rows[0];
+    
+    if (!cliente) {
+      return response.status(404).json({ message: 'Cliente no encontrado' });
+    }
+    
+    response.json(cliente);
+  } catch (error) {
+    next(error);
   }
 };
 
-// Update
-export const updateCliente = async (req: Request, res: Response, next: NextFunction) => {
+/**
+ * Actualizar cliente a través de un procedimiento almacenado.
+ */
+export const update_cliente = async (request: Request, response: Response, next: NextFunction) => { // Función y parámetros renombrados
   try {
-    const id = Number(req.params.id);
-    if (Number.isNaN(id)) return res.status(400).json({ message: 'id inválido' });
+    const id_cliente = Number(request.params.id); // Variable renombrada
+    
+    if (Number.isNaN(id_cliente)) {
+      return response.status(400).json({ message: 'id inválido' });
+    }
 
-    const { nombre, email, telefono } = req.body;
-    const result = await query('SELECT * FROM update_cliente($1,$2,$3,$4)', [id, nombre, email, telefono]);
-    const updated = result.rows[0];
-    if (!updated) return res.status(404).json({ message: 'Cliente no encontrado' });
-    res.json(updated);
-  } catch (err: any) {
-    if (err && err.code === '23505') return res.status(409).json({ message: 'email ya registrado' });
-    if (err && err.code === '45000') return res.status(400).json({ message: err.message });
-    next(err);
+    const { nombre, email, telefono } = request.body;
+    
+    // SQL renombrado: 'update_cliente' (asumo que la función PL/pgSQL es 'update_cliente')
+    const update_sql = 'SELECT * FROM update_cliente($1, $2, $3, $4)'; 
+    const query_result = await query(update_sql, [id_cliente, nombre, email, telefono]);
+    
+    const updated_row = query_result.rows[0]; // Variable renombrada
+    
+    if (!updated_row) {
+      return response.status(404).json({ message: 'Cliente no encontrado' });
+    }
+    
+    response.json(updated_row);
+  } catch (error: any) {
+    if (error && error.code === '23505') {
+      return response.status(409).json({ message: 'email ya registrado' });
+    }
+    if (error && error.code === '45000') {
+      return response.status(400).json({ message: error.message });
+    }
+    next(error);
   }
 };
 
-// Delete
-export const deleteCliente = async (req: Request, res: Response, next: NextFunction) => {
+/**
+ * Eliminar cliente a través de un procedimiento almacenado.
+ */
+export const delete_cliente = async (request: Request, response: Response, next: NextFunction) => { // Función y parámetros renombrados
   try {
-    const id = Number(req.params.id);
-    if (Number.isNaN(id)) return res.status(400).json({ message: 'id inválido' });
-    const result = await query('SELECT * FROM delete_cliente($1)', [id]);
-    const deleted = result.rows[0];
-    if (!deleted) return res.status(404).json({ message: 'Cliente no encontrado' });
-    res.json(deleted);
-  } catch (err: any) {
-    if (err && err.code === '45000') return res.status(400).json({ message: err.message });
-    next(err);
+    const id_cliente = Number(request.params.id); // Variable renombrada
+    
+    if (Number.isNaN(id_cliente)) {
+      return response.status(400).json({ message: 'id inválido' });
+    }
+    
+    // SQL renombrado: 'delete_cliente' (asumo que la función PL/pgSQL es 'delete_cliente')
+    const delete_sql = 'SELECT * FROM delete_cliente($1)';
+    const query_result = await query(delete_sql, [id_cliente]);
+    
+    const deleted_row = query_result.rows[0]; // Variable renombrada
+    
+    if (!deleted_row) {
+      return response.status(404).json({ message: 'Cliente no encontrado' });
+    }
+    
+    response.json(deleted_row);
+  } catch (error: any) {
+    if (error && error.code === '45000') {
+      return response.status(400).json({ message: error.message });
+    }
+    next(error);
   }
 };
 
-// Get by id
-export const getClienteByEmail = async (req: Request, res: Response, next: NextFunction) => {
+/**
+ * Obtener cliente por email.
+ */
+export const get_cliente_by_email = async (request: Request, response: Response, next: NextFunction) => { // Función y parámetros renombrados
   try {
-    const email = String(req.body.email).trim().toLowerCase();
-    if (!email) return res.status(400).json({ message: 'Email inválido' });
+    const email = String(request.body.email).trim().toLowerCase();
+    
+    if (!email) {
+      return response.status(400).json({ message: 'Email inválido' });
+    }
 
-    const result = await query('SELECT * FROM cliente WHERE email = $1', [email]);
-    const cliente = result.rows[0];
-    if (!cliente) return res.status(404).json({ message: 'Cliente no encontrado' });
-    res.json(cliente);
-  } catch (err) {
-    next(err);
+    const select_sql = 'SELECT * FROM cliente WHERE email = $1';
+    const query_result = await query(select_sql, [email]);
+    
+    const cliente = query_result.rows[0];
+    
+    if (!cliente) {
+      return response.status(404).json({ message: 'Cliente no encontrado' });
+    }
+    
+    response.json(cliente);
+  } catch (error) {
+    next(error);
   }
 };

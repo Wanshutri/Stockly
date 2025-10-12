@@ -1,54 +1,169 @@
 import { Request, Response, NextFunction } from 'express';
 import { query } from '../db/postgres';
-import { isNonEmptyString } from '../utils/validators';
+import { is_non_empty_string } from '../utils/validators';
 
-export const createTipoCategoria = async (req: Request, res: Response, next: NextFunction) => {
-  try { let { nombreCategoria } = req.body; if (!isNonEmptyString(nombreCategoria)) return res.status(400).json({ message: 'nombreCategoria es obligatorio' }); nombreCategoria = nombreCategoria.trim(); const result = await query('INSERT INTO TipoCategoria (nombreCategoria) VALUES ($1) RETURNING *', [nombreCategoria]); res.status(201).json(result.rows[0]); } catch (err) { next(err); }
+/**
+ * Crear tipo de categoría
+ */
+export const create_tipo_categoria = async (
+  request: Request,
+  response: Response,
+  next: NextFunction
+) => {
+  try {
+    let { nombre_categoria } = request.body;
+
+    if (!is_non_empty_string(nombre_categoria)) {
+      return response.status(400).json({ message: 'nombre_categoria es obligatorio' });
+    }
+
+    nombre_categoria = nombre_categoria.trim();
+
+    const insert_sql = `
+      INSERT INTO tipo_categoria (nombre_categoria) 
+      VALUES ($1) 
+      RETURNING id_categoria, nombre_categoria
+    `;
+
+    const query_result = await query(insert_sql, [nombre_categoria]);
+
+    response.status(201).json(query_result.rows[0]);
+  } catch (error) {
+    next(error);
+  }
 };
 
-export const getTipoCategorias = async (_req: Request, res: Response, next: NextFunction) => {
+/**
+ * Obtener todos los tipos de categoría
+ */
+export const get_tipo_categorias = async (
+  _request: Request,
+  response: Response,
+  next: NextFunction
+) => {
   try {
-    const result = await query('SELECT * FROM TipoCategoria');
-    res.json(result.rows);
+    const select_sql = `
+      SELECT id_categoria, nombre_categoria 
+      FROM tipo_categoria
+    `;
+    
+    const query_result = await query(select_sql);
+    response.json(query_result.rows);
+  } catch (error) {
+    next(error);
   }
-  catch (err) { next(err); }
 };
 
-export const getTipoCategoriaById = async (req: Request, res: Response, next: NextFunction) => {
+/**
+ * Obtener tipo de categoría por ID
+ */
+export const get_tipo_categoria_by_id = async (
+  request: Request,
+  response: Response,
+  next: NextFunction
+) => {
   try {
-    const id = Number(req.params.id);
-    if (Number.isNaN(id)) return res.status(400).json({ message: 'id inválido' });
-    const result = await query('SELECT * FROM TipoCategoria WHERE idCategoria=$1', [id]);
-    const row = result.rows[0];
-    if (!row) return res.status(404).json({ message: 'TipoCategoria no encontrada' });
-    res.json(row);
+    const id_categoria = Number(request.params.id);
+
+    if (Number.isNaN(id_categoria)) {
+      return response.status(400).json({ message: 'id inválido' });
+    }
+
+    const select_sql = `
+      SELECT id_categoria, nombre_categoria 
+      FROM tipo_categoria 
+      WHERE id_categoria = $1
+    `;
+
+    const query_result = await query(select_sql, [id_categoria]);
+
+    const tipo_categoria = query_result.rows[0];
+
+    if (!tipo_categoria) {
+      return response.status(404).json({ message: 'Tipo de categoría no encontrada' });
+    }
+
+    response.json(tipo_categoria);
+  } catch (error) {
+    next(error);
   }
-  catch (err) { next(err); }
 };
 
-export const updateTipoCategoria = async (req: Request, res: Response, next: NextFunction) => {
+/**
+ * Actualizar tipo de categoría
+ */
+export const update_tipo_categoria = async (
+  request: Request,
+  response: Response,
+  next: NextFunction
+) => {
   try {
-    const id = Number(req.params.id);
-    if (Number.isNaN(id)) return res.status(400).json({ message: 'id inválido' });
-    let { nombreCategoria } = req.body;
-    if (!isNonEmptyString(nombreCategoria)) return res.status(400).json({ message: 'nombreCategoria es obligatorio' });
-    nombreCategoria = nombreCategoria.trim();
-    const result = await query('UPDATE TipoCategoria SET nombreCategoria=$1 WHERE idCategoria=$2 RETURNING *', [nombreCategoria, id]);
-    const updated = result.rows[0];
-    if (!updated) return res.status(404).json({ message: 'TipoCategoria no encontrada' });
-    res.json(updated);
+    const id_categoria = Number(request.params.id);
+
+    if (Number.isNaN(id_categoria)) {
+      return response.status(400).json({ message: 'id inválido' });
+    }
+
+    let { nombre_categoria } = request.body;
+
+    if (!is_non_empty_string(nombre_categoria)) {
+      return response.status(400).json({ message: 'nombre_categoria es obligatorio' });
+    }
+
+    nombre_categoria = nombre_categoria.trim();
+
+    const update_sql = `
+      UPDATE tipo_categoria 
+      SET nombre_categoria = $1 
+      WHERE id_categoria = $2 
+      RETURNING id_categoria, nombre_categoria
+    `;
+
+    const query_result = await query(update_sql, [nombre_categoria, id_categoria]);
+
+    const updated_tipo_categoria = query_result.rows[0];
+
+    if (!updated_tipo_categoria) {
+      return response.status(404).json({ message: 'Tipo de categoría no encontrada' });
+    }
+
+    response.json(updated_tipo_categoria);
+  } catch (error) {
+    next(error);
   }
-  catch (err) { next(err); }
 };
 
-export const deleteTipoCategoria = async (req: Request, res: Response, next: NextFunction) => {
+/**
+ * Eliminar tipo de categoría
+ */
+export const delete_tipo_categoria = async (
+  request: Request,
+  response: Response,
+  next: NextFunction
+) => {
   try {
-    const id = Number(req.params.id);
-    if (Number.isNaN(id)) return res.status(400).json({ message: 'id inválido' });
-    const result = await query('DELETE FROM TipoCategoria WHERE idCategoria=$1 RETURNING *', [id]);
-    const deleted = result.rows[0];
-    if (!deleted) return res.status(404).json({ message: 'TipoCategoria no encontrada' });
-    res.json(deleted);
+    const id_categoria = Number(request.params.id);
+
+    if (Number.isNaN(id_categoria)) {
+      return response.status(400).json({ message: 'id inválido' });
+    }
+
+    const delete_sql = `
+      DELETE FROM tipo_categoria 
+      WHERE id_categoria = $1 
+      RETURNING id_categoria, nombre_categoria
+    `;
+
+    const query_result = await query(delete_sql, [id_categoria]);
+
+    const deleted_tipo_categoria = query_result.rows[0];
+
+    if (!deleted_tipo_categoria) {
+      return response.status(404).json({ message: 'Tipo de categoría no encontrada' });
+    }
+
+    response.json(deleted_tipo_categoria);
+  } catch (error) {
+    next(error);
   }
-  catch (err) { next(err); }
 };

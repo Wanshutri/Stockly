@@ -1,38 +1,31 @@
-# Etapa 1: build
-FROM node:20-alpine AS builder
+# Etapa 1: Construcción
+FROM node:20-alpine AS build
 
+# Establecer directorio de trabajo
 WORKDIR /app
 
-# Copiar archivos de dependencias
-COPY package.json package-lock.json* yarn.lock* pnpm-lock.yaml* ./
+# Copiar package.json y package-lock.json (si existe)
+COPY package*.json ./
 
-# Instalar dependencias (elige el gestor que uses)
-RUN npm install --frozen-lockfile || yarn install --frozen-lockfile || pnpm install --frozen-lockfile
+# Instalar dependencias
+RUN npm ci --omit=dev
 
-# Copiar resto del código (incluyendo tsconfig.json)
+# Copiar el resto del código fuente
 COPY . .
 
-# Compilar la app (TypeScript -> JS incluido en el build de Next)
-RUN npm run build
-
-# Etapa 2: runtime
-FROM node:20-alpine AS runner
+# Etapa 2: Ejecución
+FROM node:20-alpine
 
 WORKDIR /app
 
+# Copiar desde la etapa de build solo lo necesario
+COPY --from=build /app ./
+
+# Definir variable de entorno
 ENV NODE_ENV=production
-ENV NEXT_TELEMETRY_DISABLED=1
 
-# Copiar solo lo necesario para ejecutar
-COPY --from=builder /app/package.json ./package.json
-COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/next.config.ts ./next.config.ts
-COPY --from=builder /app/tsconfig.json ./tsconfig.json
-
-# Exponer puerto por defecto de Next.js
+# Exponer el puerto que usa tu app (por defecto 3000)
 EXPOSE 3000
 
-# Ejecutar
-CMD ["npm", "start"]
+# Comando de inicio
+CMD ["npm", "run", "build"]

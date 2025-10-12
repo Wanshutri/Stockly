@@ -1,13 +1,13 @@
 import { Router } from 'express';
-import { createCliente, deleteCliente, getClienteByEmail, getClienteById, getClientes, updateCliente } from '../controllers/ClienteController';
+import { create_cliente, delete_cliente, get_cliente_by_email, get_cliente_by_id, get_clientes, update_cliente } from '../controllers/ClienteController';
 
 const router = Router();
 
-router.get('/', getClientes);
-router.get('/:id', getClienteById);
-router.post('/', createCliente);
-router.put('/:id', updateCliente);
-router.delete('/:id', deleteCliente);
-router.post('/email', getClienteByEmail);
+router.get('/', get_clientes);
+router.get('/:id', get_cliente_by_id);
+router.post('/', create_cliente);
+router.put('/:id', update_cliente);
+router.delete('/:id', delete_cliente);
+router.post('/email', get_cliente_by_email);
 
 export default router;
