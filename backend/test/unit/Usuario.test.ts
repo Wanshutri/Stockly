@@ -23,7 +23,7 @@ describe('Usuario API', () => {
 
         // Limpieza de tablas dependientes e independientes
         await query('DELETE FROM usuario');
-        
+
         await query('DELETE FROM tipo_usuario');
         // Asegurarse de que el tipo de usuario base exista para las pruebas
         await query(`
@@ -81,6 +81,22 @@ describe('Usuario API', () => {
 
             expect(response.status).toBe(409);
             expect(response.body.message).toBe('email ya registrado');
+        });
+
+        it('Debe devolver un error 409 si el tipo de usuario no existe', async () => {
+            const response = await request(app)
+                .post('/api/usuarios')
+                .send({
+                    nombre: 'Usuario Prueba',
+                    email: 'prueba@test.com',
+                    password: 'password123',
+                    id_tipo: 9999
+                });
+
+            expect(response.status).toBe(409);
+            expect(response.body.message).toBe(
+                'No se puede crear usuario porque el Tipo de Usuario no existe.'
+            );
         });
     });
 
@@ -211,8 +227,7 @@ describe('Usuario API', () => {
             const newId = postResponse.body.id_usuario;
 
             const deleteResponse = await request(app).delete(`/api/usuarios/${newId}`);
-            expect(deleteResponse.status).toBe(200);
-            expect(deleteResponse.body.id_usuario).toBe(newId);
+            expect(deleteResponse.status).toBe(204);
 
             // Verificar que realmente se haya eliminado
             const getResponse = await request(app).get(`/api/usuarios/${newId}`);

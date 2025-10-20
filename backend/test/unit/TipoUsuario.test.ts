@@ -48,7 +48,7 @@ describe('TipoUsuario API', () => {
         .send({});
 
       expect(response.status).toBe(400);
-      expect(response.body.message).toBe('nombre_tipo es obligatorio');
+      expect(response.body.message).toBe('El campo nombre_tipo es obligatorio y no debe estar vacío.');
     });
   });
 
@@ -68,7 +68,7 @@ describe('TipoUsuario API', () => {
     it('Debe devolver un error 404 para un ID que no existe', async () => {
       const response = await request(app).get('/api/tipos-usuario/9999');
       expect(response.status).toBe(404);
-      expect(response.body.message).toBe('tipo_usuario no encontrado');
+      expect(response.body.message).toBe('Tipo de usuario no encontrado.');
     });
   });
 
@@ -92,7 +92,7 @@ describe('TipoUsuario API', () => {
         .put('/api/tipos-usuario/9999')
         .send({ nombre_tipo: 'NoExisto' });
       expect(response.status).toBe(404);
-      expect(response.body.message).toBe('tipo_usuario no encontrado');
+      expect(response.body.message).toBe('Tipo de usuario no encontrado.');
     });
   });
 
@@ -113,7 +113,28 @@ describe('TipoUsuario API', () => {
     it('Debe devolver un error 404 al intentar eliminar un tipo de usuario que no existe', async () => {
       const response = await request(app).delete('/api/tipos-usuario/9999');
       expect(response.status).toBe(404);
-      expect(response.body.message).toBe('tipo_usuario no encontrado');
+      expect(response.body.message).toBe('Tipo de usuario no encontrado.');
     });
+
+    it('Debe devolver un error 409 al intentar eliminar un tipo de usuario que tiene usuarios asignados.', async () => {
+      const postResponse = await request(app)
+        .post('/api/tipos-usuario/')
+        .send({ nombre_tipo: 'AEliminar' });
+      const newId = postResponse.body.id_tipo;
+
+      const postUserResponse = await request(app)
+        .post('/api/usuarios')
+        .send({
+          nombre: 'Usuario Dos',
+          email: 'segundo@test.com',
+          password: 'testpassword',
+          id_tipo: newId,
+        });
+
+      const deleteResponse = await request(app).delete(`/api/tipos-usuario/${newId}`);
+      expect(deleteResponse.status).toBe(409);
+      expect(deleteResponse.body.message).toBe('No se puede eliminar el Tipo de Usuario porque todavía hay usuarios asociados a este tipo.');
+    });
+
   });
 });
