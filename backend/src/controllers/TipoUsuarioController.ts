@@ -91,7 +91,7 @@ export const create_tipo_usuario = async (request: Request, response: Response, 
  */
 export const get_tipo_usuarios = async (_request: Request, response: Response, next: NextFunction) => {
     try {
-        const select_sql = `SELECT * FROM tipo_usuario`;
+        const select_sql = `SELECT * FROM tipo_usuario ORDER BY nombre_tipo ASC`;
         const query_result = await query(select_sql);
         // Estandar HTTP: 200 OK para la obtención exitosa.
         return response.status(200).json(query_result.rows);

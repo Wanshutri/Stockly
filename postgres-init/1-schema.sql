@@ -13,7 +13,7 @@ CREATE TABLE marca (
 
 CREATE TABLE tipo_categoria (
     id_categoria SERIAL PRIMARY KEY,
-    nombre_categoria VARCHAR(100) NOT NULL
+    nombre_categoria VARCHAR(100) UNIQUE NOT NULL
 );
 
 CREATE TABLE tipo_usuario (
@@ -22,7 +22,7 @@ CREATE TABLE tipo_usuario (
 );
 
 CREATE TABLE tipo_documento_tributario (
-    codigo_sii NUMERIC(3) PRIMARY KEY,
+    codigo_sii VARCHAR(3) PRIMARY KEY,
     nombre_tipo VARCHAR(100) NOT NULL
 );
 
@@ -87,7 +87,7 @@ CREATE TABLE detalle_compra (
 CREATE TABLE documento_tributario (
     id_documento SERIAL PRIMARY KEY,
     id_compra INT NOT NULL,
-    id_tipo INT NOT NULL,
+    id_tipo VARCHAR(3) NOT NULL,
     FOREIGN KEY (id_compra) REFERENCES compra(id_compra),
     FOREIGN KEY (id_tipo) REFERENCES tipo_documento_tributario(codigo_sii)
 );
@@ -102,56 +102,63 @@ INSERT INTO tipo_usuario (nombre_tipo) VALUES
 ('Bodeguero');
 
 INSERT INTO tipo_documento_tributario (codigo_sii, nombre_tipo) VALUES
-(30, 'Factura'),
-(32, 'Factura de ventas y servicios no afectos o exentos de IVA'),
-(35, 'Boleta'),
-(38, 'Boleta exenta'),
-(40, 'Liquidación Factura'),
-(45, 'Factura de Compra'),
-(50, 'Guía de Despacho'),
-(55, 'Nota de Débito'),
-(60, 'Nota de Crédito'),
-(101, 'Factura de Exportación'),
-(102, 'Factura de Venta Exenta a Zona Franca Primaria'),
-(104, 'Nota de Débito de Exportación'),
-(106, 'Nota de Crédito de Exportación'),
-(33, 'Factura Electrónica'),
-(34, 'Factura No Afecta o Exenta Electrónica'),
-(39, 'Boleta Electrónica'),
-(41, 'Boleta Exenta Electrónica'),
-(43, 'Liquidación Factura Electrónica'),
-(46, 'Factura de Compra Electrónica'),
-(52, 'Guía de Despacho Electrónica'),
-(56, 'Nota de Débito Electrónica'),
-(61, 'Nota de Crédito Electrónica'),
-(110, 'Factura de Exportación Electrónica'),
-(111, 'Nota de Débito de Exportación Electrónica'),
-(112, 'Nota de Crédito de Exportación Electrónica'),
-(801, 'Factura de Venta Electrónica Zona Franca'),
-(802, 'Factura de Compra Electrónica Zona Franca'),
-(803, 'Guía de Despacho Zona Franca Electrónica'),
-(804, 'Liquidación Factura Zona Franca Electrónica'),
-(805, 'Nota de Crédito Zona Franca Electrónica'),
-(806, 'Nota de Débito Zona Franca Electrónica'),
-(500, 'Factura de Ajuste Tipo de Cambio'),
-(501, 'Factura de Ajuste Tipo de Cambio Electrónica'),
-(48, 'Boleta de Honorarios'),
-(70, 'Boleta de Honorarios Electrónica'),
-(341, 'Factura de Servicios Periódicos Electrónica'),
-(342, 'Boleta de Prestación de Servicios Electrónica'),
-(343, 'Boleta de Prestación de Servicios Exenta Electrónica'),
-(344, 'Liquidación Factura de Exportación Electrónica'),
-(345, 'Factura de Compra de Exportación Electrónica'),
-(346, 'Guía de Despacho de Exportación Electrónica'),
-(347, 'Recibo de Pago Electrónico'),
-(348, 'Documento de Ajuste Global Electrónico'),
-(349, 'Factura de Compra a Sujeto No Domiciliado Electrónica'),
-(350, 'Factura de Venta a Zona Franca Secundaria Electrónica'),
-(351, 'Nota de Débito a Zona Franca Secundaria Electrónica'),
-(352, 'Nota de Crédito a Zona Franca Secundaria Electrónica'),
-(353, 'Liquidación Factura Zona Franca Secundaria Electrónica'),
-(354, 'Factura Exenta de Servicios Digitales'),
-(355, 'Factura Electrónica de Servicios Digitales'),
-(356, 'Boleta Electrónica de Servicios Digitales'),
-(357, 'Nota de Crédito Electrónica de Servicios Digitales'),
-(358, 'Nota de Débito Electrónica de Servicios Digitales');
+('30', 'Factura'),
+('32', 'Factura de ventas y servicios no afectos o exentos de IVA'),
+('35', 'Boleta'),
+('38', 'Boleta exenta'),
+('40', 'Liquidación Factura'),
+('45', 'Factura de Compra'),
+('50', 'Guía de Despacho'),
+('55', 'Nota de Débito'),
+('60', 'Nota de Crédito'),
+('101', 'Factura de Exportación'),
+('102', 'Factura de Venta Exenta a Zona Franca Primaria'),
+('104', 'Nota de Débito de Exportación'),
+('106', 'Nota de Crédito de Exportación'),
+('33', 'Factura Electrónica'),
+('34', 'Factura No Afecta o Exenta Electrónica'),
+('39', 'Boleta Electrónica'),
+('41', 'Boleta Exenta Electrónica'),
+('43', 'Liquidación Factura Electrónica'),
+('46', 'Factura de Compra Electrónica'),
+('52', 'Guía de Despacho Electrónica'),
+('56', 'Nota de Débito Electrónica'),
+('61', 'Nota de Crédito Electrónica'),
+('110', 'Factura de Exportación Electrónica'),
+('111', 'Nota de Débito de Exportación Electrónica'),
+('112', 'Nota de Crédito de Exportación Electrónica'),
+('801', 'Factura de Venta Electrónica Zona Franca'),
+('802', 'Factura de Compra Electrónica Zona Franca'),
+('803', 'Guía de Despacho Zona Franca Electrónica'),
+('804', 'Liquidación Factura Zona Franca Electrónica'),
+('805', 'Nota de Crédito Zona Franca Electrónica'),
+('806', 'Nota de Débito Zona Franca Electrónica'),
+('500', 'Factura de Ajuste Tipo de Cambio'),
+('501', 'Factura de Ajuste Tipo de Cambio Electrónica'),
+('48', 'Boleta de Honorarios'),
+('70', 'Boleta de Honorarios Electrónica'),
+('341', 'Factura de Servicios Periódicos Electrónica'),
+('342', 'Boleta de Prestación de Servicios Electrónica'),
+('343', 'Boleta de Prestación de Servicios Exenta Electrónica'),
+('344', 'Liquidación Factura de Exportación Electrónica'),
+('345', 'Factura de Compra de Exportación Electrónica'),
+('346', 'Guía de Despacho de Exportación Electrónica'),
+('347', 'Recibo de Pago Electrónico'),
+('348', 'Documento de Ajuste Global Electrónico'),
+('349', 'Factura de Compra a Sujeto No Domiciliado Electrónica'),
+('350', 'Factura de Venta a Zona Franca Secundaria Electrónica'),
+('351', 'Nota de Débito a Zona Franca Secundaria Electrónica'),
+('352', 'Nota de Crédito a Zona Franca Secundaria Electrónica'),
+('353', 'Liquidación Factura Zona Franca Secundaria Electrónica'),
+('354', 'Factura Exenta de Servicios Digitales'),
+('355', 'Factura Electrónica de Servicios Digitales'),
+('356', 'Boleta Electrónica de Servicios Digitales'),
+('357', 'Nota de Crédito Electrónica de Servicios Digitales'),
+('358', 'Nota de Débito Electrónica de Servicios Digitales');
+
+INSERT INTO tipo_categoria (nombre_categoria) VALUES
+('Electrónica'),
+('Ropa'),
+('Hogar'),
+('Deportes'),
+('Juguetes');

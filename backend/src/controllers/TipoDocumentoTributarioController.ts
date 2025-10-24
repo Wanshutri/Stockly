@@ -82,7 +82,7 @@ export const get_tipo_documentos = async (
     next: NextFunction
 ) => {
     try {
-        const select_sql = `SELECT * FROM tipo_documento_tributario`;
+        const select_sql = `SELECT * FROM tipo_documento_tributario ORDER BY nombre_tipo ASC`;
         const query_result = await query(select_sql);
         // Estandar HTTP: 200 OK para la obtención exitosa.
         return response.status(200).json(query_result.rows);

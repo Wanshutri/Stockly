@@ -92,11 +92,10 @@ export const get_usuarios = async (_req: Request, res: Response, next: NextFunct
     try {
         // Consulta para obtener todos los usuarios, excluyendo el campo 'password'
         const resultado = await query(
-            'SELECT id_usuario, nombre, email, activo, id_tipo FROM usuario'
+            'SELECT id_usuario, nombre, email, activo, id_tipo FROM usuario ORDER BY id_usuario ASC'
         );
         res.json(resultado.rows);
     } catch (err) {
-        // 🚨 LOG DE ERROR AÑADIDO AQUÍ
         console.error('Error en get_usuarios:', err);
         next(err);
     }
@@ -130,7 +129,6 @@ export const get_usuario_by_id = async (req: Request, res: Response, next: NextF
 
         res.json(fila);
     } catch (err) {
-        // 🚨 LOG DE ERROR AÑADIDO AQUÍ
         console.error('Error en get_usuario_by_id:', err);
         next(err);
     }
@@ -209,7 +207,6 @@ export const update_usuario = async (req: Request, res: Response, next: NextFunc
 
         res.json(actualizado);
     } catch (err: any) {
-        // 🚨 LOG DE ERROR AÑADIDO AQUÍ
         console.error('Error en update_usuario:', err);
         
         // Manejo específico para violación de unicidad del email (Error 23505 en PostgreSQL)
@@ -249,7 +246,6 @@ export const delete_usuario = async (req: Request, res: Response, next: NextFunc
         // Eliminación exitosa: Responde con 204 No Content, sin cuerpo.
         return res.status(204).end();
     } catch (err) {
-        // 🚨 LOG DE ERROR AÑADIDO AQUÍ
         console.error('Error en delete_usuario:', err);
         next(err);
     }
@@ -302,7 +298,6 @@ export const login_usuario = async (req: Request, res: Response, next: NextFunct
 
         res.json({ token }); // Envía el token al cliente
     } catch (err) {
-        // 🚨 LOG DE ERROR AÑADIDO AQUÍ
         console.error('Error en login_usuario:', err);
         next(err);
     }
