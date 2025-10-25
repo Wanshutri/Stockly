@@ -21,13 +21,13 @@ services:
   #     - bd-net
   #     - backend-net
 
-  frontend:
-    build: ./frontend
-    container_name: frontend-stockly
-    restart: always
-    command: npm run start
-    networks:
-      - frontend-net
+  # frontend:
+  #   build: ./frontend
+  #   container_name: frontend-stockly
+  #   restart: always
+  #   command: npm run start
+  #   networks:
+  #     - frontend-net
 
   # Reverse proxy service using Nginx
   nginx:

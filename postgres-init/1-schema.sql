@@ -8,7 +8,7 @@
 -- =====================================
 CREATE TABLE marca (
     id_marca SERIAL PRIMARY KEY,
-    nombre_marca VARCHAR(100) NOT NULL
+    nombre_marca VARCHAR(100) UNIQUE NOT NULL
 );
 
 CREATE TABLE tipo_categoria (
@@ -36,18 +36,27 @@ CREATE TABLE producto (
     id_marca INT NOT NULL,
     precio_venta NUMERIC(10,2) NOT NULL,
     precio_compra NUMERIC(10,2) NOT NULL,
+    descripcion VARCHAR(200) NOT NULL,
     stock INT NOT NULL,
     FOREIGN KEY (id_categoria) REFERENCES tipo_categoria(id_categoria),
     FOREIGN KEY (id_marca) REFERENCES marca(id_marca)
 );
 
+-- =====================================
+-- Cliente (puede ser identificado o anónimo)
+-- =====================================
 CREATE TABLE cliente (
     id_cliente SERIAL PRIMARY KEY,
-    nombre VARCHAR(100) NOT NULL,
-    email VARCHAR(100) UNIQUE NOT NULL,
-    telefono VARCHAR(20)
+    rut VARCHAR(12) UNIQUE,                  -- RUT único si lo proporciona
+    nombre_completo VARCHAR(150),
+    telefono VARCHAR(20),
+    correo VARCHAR(100),
+    es_anonimo BOOLEAN DEFAULT FALSE         -- Indica si es un cliente anónimo
 );
 
+-- =====================================
+-- Usuario del sistema
+-- =====================================
 CREATE TABLE usuario (
     id_usuario SERIAL PRIMARY KEY,
     nombre VARCHAR(100) NOT NULL,
@@ -58,12 +67,18 @@ CREATE TABLE usuario (
     FOREIGN KEY (id_tipo) REFERENCES tipo_usuario(id_tipo)
 );
 
+-- =====================================
+-- Pago
+-- =====================================
 CREATE TABLE pago (
     id_pago SERIAL PRIMARY KEY,
     monto_efectivo NUMERIC(10,2) DEFAULT 0,
     monto_tarjeta NUMERIC(10,2) DEFAULT 0
 );
 
+-- =====================================
+-- Compra (siempre tiene un cliente, aunque sea anónimo)
+-- =====================================
 CREATE TABLE compra (
     id_compra SERIAL PRIMARY KEY,
     fecha DATE NOT NULL,
@@ -74,6 +89,9 @@ CREATE TABLE compra (
     FOREIGN KEY (id_pago) REFERENCES pago(id_pago)
 );
 
+-- =====================================
+-- Detalle de compra
+-- =====================================
 CREATE TABLE detalle_compra (
     sku VARCHAR(50) NOT NULL,
     id_compra INT NOT NULL,
@@ -84,6 +102,9 @@ CREATE TABLE detalle_compra (
     FOREIGN KEY (id_compra) REFERENCES compra(id_compra)
 );
 
+-- =====================================
+-- Documento tributario
+-- =====================================
 CREATE TABLE documento_tributario (
     id_documento SERIAL PRIMARY KEY,
     id_compra INT NOT NULL,
@@ -91,7 +112,6 @@ CREATE TABLE documento_tributario (
     FOREIGN KEY (id_compra) REFERENCES compra(id_compra),
     FOREIGN KEY (id_tipo) REFERENCES tipo_documento_tributario(codigo_sii)
 );
-
 
 -- =====================================
 -- Datos iniciales
@@ -162,3 +182,17 @@ INSERT INTO tipo_categoria (nombre_categoria) VALUES
 ('Hogar'),
 ('Deportes'),
 ('Juguetes');
+
+INSERT INTO marca (nombre_marca) VALUES
+('Carozzi'),
+('Traverso'),
+('Coca-Cola'),
+('Lucchetti'),
+('Lays'),
+('Nestle');
+
+-- =====================================
+-- Cliente anónimo (para compras sin datos)
+-- =====================================
+INSERT INTO cliente (rut, nombre_completo, es_anonimo)
+VALUES ('99999999-9', 'Cliente Anónimo', TRUE);

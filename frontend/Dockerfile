@@ -9,7 +9,6 @@ COPY package*.json ./
 
 # Instalar dependencias
 RUN npm ci --omit=dev
-
 # Copiar el resto del código fuente
 COPY . .
 

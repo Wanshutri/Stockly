@@ -1,274 +1,393 @@
+// Importaciones de módulos y tipos
 import { Request, Response, NextFunction } from 'express';
 import { query } from '../db/postgres';
-import { is_non_empty_string, is_positive_number } from '../utils/validators'; // is_positive_number ya está en snake_case
+import { is_non_empty_string, is_positive_number } from '../utils/validators';
+
+// -------------------------------------------------------------------
+// --- TIPADO PARA ERRORES DE POSTGRES ---
+// -------------------------------------------------------------------
+// Definición de una interfaz básica para errores de PostgreSQL que tienen un código
+interface PgError extends Error {
+    code?: string;
+    detail?: string;
+    constraint?: string;
+}
+
+// -------------------------------------------------------------------
+// --- CONTROLADORES CRUD ---
+// -------------------------------------------------------------------
 
 /**
- * Crear producto
+ * @function create_producto
+ * @description Crea un nuevo producto en la base de datos.
+ * @param {Request} request El objeto de la solicitud. Requiere `sku`, `nombre`, `precio_venta`, `precio_compra`, `stock` y opcionalmente `id_categoria`, `id_marca` en `request.body`.
+ * @param {Response} response El objeto de la respuesta de Express.
+ * @param {NextFunction} next La función para pasar el control al siguiente middleware de errores.
+ * @returns {Response} Responde con un estado 201 y el objeto creado, o 400/409 si hay errores.
  */
-export const create_producto = async (request: Request, response: Response, next: NextFunction) => { // Función renombrada
-  try {
-    // Variables desestructuradas renombradas y acceso a body
-    let { sku, nombre, id_categoria, id_marca, precio_venta, precio_compra, stock } = request.body; 
+export const create_producto = async (
+    request: Request,
+    response: Response,
+    next: NextFunction
+) => {
+    try {
+        let { sku, nombre, id_categoria, id_marca, precio_venta, precio_compra, stock } = request.body;
 
-    // `isNonEmptyString` no es una función importada, asumo que debería ser `is_non_empty_string` (la que sí está importada)
-    if (!is_non_empty_string(sku) || !is_non_empty_string(nombre)) {
-      return response.status(400).json({ message: 'sku y nombre son obligatorios' });
+        // Estandar HTTP: 400 Bad Request si la carga útil es inválida.
+        if (!is_non_empty_string(sku) || !is_non_empty_string(nombre)) {
+            return response.status(400).json({ message: 'Los campos SKU y nombre son obligatorios y no deben estar vacíos.' });
+        }
+
+        sku = sku.trim();
+        nombre = nombre.trim();
+
+        // Estandar HTTP: 400 Bad Request si la carga útil es inválida.
+        if (
+            !is_positive_number(precio_venta) ||
+            !is_positive_number(precio_compra) ||
+            !is_positive_number(stock)
+        ) {
+            return response
+                .status(400)
+                .json({ message: 'Los campos precio_venta, precio_compra y stock deben ser números positivos (o cero).' });
+        }
+
+        // Se manejan IDs nulos si no se proporcionan
+        const final_id_categoria = id_categoria || null;
+        const final_id_marca = id_marca || null;
+
+        const insert_sql = ` 
+            INSERT INTO producto (
+                sku, nombre, id_categoria, id_marca, precio_venta, precio_compra, stock
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7)
+            RETURNING 
+                sku, 
+                nombre, 
+                id_categoria, 
+                id_marca, 
+                precio_venta, 
+                precio_compra, 
+                stock
+        `;
+
+        const query_result = await query(insert_sql, [
+            sku,
+            nombre,
+            final_id_categoria,
+            final_id_marca,
+            precio_venta,
+            precio_compra,
+            stock,
+        ]);
+
+        // Estandar HTTP: 201 Created para la creación exitosa.
+        response.status(201).json(query_result.rows[0]);
+
+    } catch (error) {
+        // Log solo en caso de error
+        console.error('Error en create_producto:', error);
+
+        const err = error as PgError;
+
+        // Manejo de error de unicidad (PostgreSQL: Código '23505')
+        if (err.code === '23505') {
+            // Estandar HTTP: 409 Conflict si el SKU (o u otro campo unique) ya existe.
+            if (err.constraint === 'producto_sku_key') {
+                return response.status(409).json({ message: 'Ya existe un producto con ese SKU.' });
+            }
+            return response.status(409).json({ message: 'Ya existe un producto con ese SKU.' });
+        }
+
+        // Manejo de error de clave foránea (PostgreSQL: Código '23503')
+        if (err.code === '23503') {
+            // Estandar HTTP: 409 Conflict (o 400 Bad Request) si la categoría o marca no existen.
+            if (err.constraint === 'producto_id_categoria_fkey') {
+                return response.status(409).json({ message: 'La categoría (id_categoria) proporcionada no existe.' });
+            }
+            if (err.constraint === 'producto_id_marca_fkey') {
+                return response.status(409).json({ message: 'La marca (id_marca) proporcionada no existe.' });
+            }
+            return response.status(409).json({ message: 'Referencia a clave foránea inválida.' });
+        }
+
+        next(error);
     }
-
-    sku = sku.trim();
-    nombre = nombre.trim();
-
-    // `isPositiveNumber` no es una función importada, asumo que debería ser `is_positive_number` (la que sí está importada)
-    if (
-      !is_positive_number(precio_venta) ||
-      !is_positive_number(precio_compra) ||
-      !is_positive_number(stock)
-    ) {
-      return response
-        .status(400)
-        .json({ message: 'precios y stock deben ser números no negativos' });
-    }
-
-    // Validar que el SKU sea único
-    const exists = await query('SELECT 1 FROM producto WHERE sku = $1 LIMIT 1', [sku]);
-    if ((exists?.rowCount ?? 0) > 0) {
-      return response.status(409).json({ message: 'sku ya existe' });
-    }
-
-    // Alias en el SQL cambiados a snake_case o eliminados si la columna ya es snake_case
-    const insert_sql = ` 
-      INSERT INTO producto (
-        sku, nombre, id_categoria, id_marca, precio_venta, precio_compra, stock
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7)
-      RETURNING 
-        sku, 
-        nombre, 
-        id_categoria, 
-        id_marca, 
-        precio_venta, 
-        precio_compra, 
-        stock
-    `;
-
-    // Variables de resultado y error renombradas
-    const query_result = await query(insert_sql, [
-      sku,
-      nombre,
-      id_categoria,
-      id_marca,
-      precio_venta,
-      precio_compra,
-      stock,
-    ]);
-
-    response.status(201).json(query_result.rows[0]);
-  } catch (error) {
-    next(error);
-  }
 };
 
+// -------------------------------------------------------------------
+
 /**
- * Obtener todos los productos
+ * @function get_productos
+ * @description Obtiene todos los productos de la base de datos, ordenados por nombre.
+ * @param {Request} _request El objeto de la solicitud (no usado).
+ * @param {Response} response El objeto de la respuesta de Express.
+ * @param {NextFunction} next La función para pasar el control al siguiente middleware de errores.
+ * @returns {Response} Responde con un estado 200 y un array de productos.
  */
-export const get_productos = async (_request: Request, response: Response, next: NextFunction) => { // Función y parámetros renombrados
-  try {
-    // Alias en el SQL cambiados a snake_case o eliminados
-    const query_result = await query(`
-      SELECT 
-        sku, 
-        nombre, 
-        id_categoria, 
-        id_marca, 
-        precio_venta, 
-        precio_compra, 
-        stock
-      FROM producto
-    `); // Variable de resultado renombrada
-    response.json(query_result.rows);
-  } catch (error) {
-    next(error);
-  }
+export const get_productos = async (
+    _request: Request,
+    response: Response,
+    next: NextFunction
+) => {
+    try {
+        const select_sql = `
+            SELECT 
+                sku, 
+                nombre, 
+                id_categoria, 
+                id_marca, 
+                precio_venta, 
+                precio_compra, 
+                stock
+            FROM producto
+            ORDER BY nombre ASC
+        `;
+
+        const query_result = await query(select_sql);
+
+        // Estandar HTTP: 200 OK para la obtención exitosa.
+        response.status(200).json(query_result.rows);
+    } catch (error) {
+        // Log solo en caso de error
+        console.error('Error en get_productos:', error);
+        next(error);
+    }
 };
 
+// -------------------------------------------------------------------
+
 /**
- * Obtener producto por SKU
+ * @function get_producto_by_sku
+ * @description Obtiene un solo producto por su SKU (string).
+ * @param {Request} request El objeto de la solicitud. Contiene el SKU en `request.params.sku`.
+ * @param {Response} response El objeto de la respuesta de Express.
+ * @param {NextFunction} next La función para pasar el control al siguiente middleware de errores.
+ * @returns {Response} Responde con un estado 200 y el objeto `producto`, o 400/404 si hay errores.
  */
-export const get_producto_by_sku = async (request: Request, response: Response, next: NextFunction) => { // Función y parámetros renombrados
-  try {
-    const { sku } = request.params; // Acceso a params renombrado
-    
-    // `isNonEmptyString` -> `is_non_empty_string`
-    if (!is_non_empty_string(sku)) {
-      return response.status(400).json({ message: 'sku inválido' });
+export const get_producto_by_sku = async (
+    request: Request,
+    response: Response,
+    next: NextFunction
+) => {
+    try {
+        const { sku } = request.params;
+
+        // Estandar HTTP: 400 Bad Request si el SKU del parámetro es inválido.
+        if (!is_non_empty_string(sku)) {
+            return response.status(400).json({ message: 'El parámetro SKU es inválido o está vacío.' });
+        }
+
+        const select_sql = `
+            SELECT 
+                sku, 
+                nombre, 
+                id_categoria, 
+                id_marca, 
+                precio_venta, 
+                precio_compra, 
+                stock
+            FROM producto 
+            WHERE sku = $1
+        `;
+
+        const query_result = await query(select_sql, [sku]);
+
+        const producto = query_result.rows[0];
+
+        // Estandar HTTP: 404 Not Found si el recurso no existe.
+        if (!producto) {
+            return response.status(404).json({ message: 'Producto no encontrado.' });
+        }
+
+        // Estandar HTTP: 200 OK para la obtención exitosa.
+        response.status(200).json(producto);
+    } catch (error) {
+        // Log solo en caso de error
+        console.error('Error en get_producto_by_sku:', error);
+        next(error);
     }
-
-    // Alias en el SQL cambiados a snake_case o eliminados
-    const query_result = await query(
-      `
-      SELECT 
-        sku, 
-        nombre, 
-        id_categoria, 
-        id_marca, 
-        precio_venta, 
-        precio_compra, 
-        stock
-      FROM producto 
-      WHERE sku = $1
-      `,
-      [sku]
-    ); // Variable de resultado renombrada
-
-    const producto = query_result.rows[0];
-    if (!producto) {
-      return response.status(404).json({ message: 'Producto no encontrado' });
-    }
-
-    response.json(producto);
-  } catch (error) {
-    next(error);
-  }
 };
 
+// -------------------------------------------------------------------
+
 /**
- * Actualizar producto por SKU
+ * @function update_producto
+ * @description Actualiza los campos de un producto por su SKU.
+ * @param {Request} request El objeto de la solicitud. Contiene el SKU en `request.params.sku` y los campos a actualizar en `request.body`.
+ * @param {Response} response El objeto de la respuesta de Express.
+ * @param {NextFunction} next La función para pasar el control al siguiente middleware de errores.
+ * @returns {Response} Responde con un estado 200 y el objeto actualizado, o 400/404/409 si hay errores.
  */
-export const update_producto = async (request: Request, response: Response, next: NextFunction) => { // Función y parámetros renombrados
-  try {
-    const { sku } = request.params;
-    
-    // `isNonEmptyString` -> `is_non_empty_string`
-    if (!is_non_empty_string(sku)) {
-      return response.status(400).json({ message: 'sku inválido' });
+export const update_producto = async (
+    request: Request,
+    response: Response,
+    next: NextFunction
+) => {
+    try {
+        const { sku } = request.params;
+
+        // Estandar HTTP: 400 Bad Request si el SKU del parámetro es inválido.
+        if (!is_non_empty_string(sku)) {
+            return response.status(400).json({ message: 'El parámetro SKU es inválido o está vacío.' });
+        }
+
+        const { nombre, id_categoria, id_marca, precio_venta, precio_compra, stock } = request.body;
+
+        const set_clauses: string[] = [];
+        const params: any[] = [];
+        let param_index = 1;
+
+        // Estandar HTTP: 400 Bad Request si la carga útil es inválida.
+        if (nombre !== undefined) {
+            if (!is_non_empty_string(nombre)) {
+                return response.status(400).json({ message: 'El campo nombre no puede ser una cadena vacía.' });
+            }
+            set_clauses.push(`nombre = $${param_index++}`);
+            params.push(nombre.trim());
+        }
+
+        if (id_categoria !== undefined) {
+            set_clauses.push(`id_categoria = $${param_index++}`);
+            params.push(id_categoria); // Permitir null
+        }
+
+        if (id_marca !== undefined) {
+            set_clauses.push(`id_marca = $${param_index++}`);
+            params.push(id_marca); // Permitir null
+        }
+
+        if (precio_venta !== undefined) {
+            if (!is_positive_number(precio_venta)) {
+                return response.status(400).json({ message: 'precio_venta debe ser un número positivo (o cero).' });
+            }
+            set_clauses.push(`precio_venta = $${param_index++}`);
+            params.push(precio_venta);
+        }
+
+        if (precio_compra !== undefined) {
+            if (!is_positive_number(precio_compra)) {
+                return response.status(400).json({ message: 'precio_compra debe ser un número positivo (o cero).' });
+            }
+            set_clauses.push(`precio_compra = $${param_index++}`);
+            params.push(precio_compra);
+        }
+
+        if (stock !== undefined) {
+            if (!is_positive_number(stock)) {
+                return response.status(400).json({ message: 'stock debe ser un número positivo (o cero).' });
+            }
+            set_clauses.push(`stock = $${param_index++}`);
+            params.push(stock);
+        }
+
+        // Estandar HTTP: 400 Bad Request si no se envía nada para actualizar.
+        if (set_clauses.length === 0) {
+            return response.status(400).json({ message: 'No se proporcionaron campos para actualizar.' });
+        }
+
+        const update_sql = `
+            UPDATE producto
+            SET ${set_clauses.join(', ')}
+            WHERE sku = $${param_index}
+            RETURNING 
+                sku, 
+                nombre, 
+                id_categoria, 
+                id_marca, 
+                precio_venta, 
+                precio_compra, 
+                stock
+        `;
+
+        params.push(sku); // Añadir el SKU al final para el WHERE
+
+        const query_result = await query(update_sql, params);
+        const updated_producto = query_result.rows[0];
+
+        // Estandar HTTP: 404 Not Found si el recurso no existe.
+        if (!updated_producto) {
+            return response.status(404).json({ message: 'Producto no encontrado.' });
+        }
+
+        // Estandar HTTP: 200 OK para la actualización exitosa.
+        response.status(200).json(updated_producto);
+
+    } catch (error) {
+        // Log solo en caso de error
+        console.error('Error en update_producto:', error);
+
+        const err = error as PgError;
+
+        // Manejo de error de clave foránea (PostgreSQL: Código '23503')
+        if (err.code === '23503') {
+            // Estandar HTTP: 409 Conflict (o 400) si la categoría o marca no existen.
+            if (err.constraint === 'producto_id_categoria_fkey') {
+                return response.status(409).json({ message: 'La categoría (id_categoria) proporcionada no existe.' });
+            }
+            if (err.constraint === 'producto_id_marca_fkey') {
+                return response.status(409).json({ message: 'La marca (id_marca) proporcionada no existe.' });
+            }
+            return response.status(409).json({ message: 'Referencia a clave foránea inválida.' });
+        }
+
+        next(error);
     }
-
-    // Variables desestructuradas renombradas y acceso a body
-    const { nombre, id_categoria, id_marca, precio_venta, precio_compra, stock } = request.body;
-
-    const set: string[] = [];
-    const params: any[] = [];
-    let idx = 1;
-
-    if (nombre !== undefined) {
-      // `isNonEmptyString` -> `is_non_empty_string`
-      if (!is_non_empty_string(nombre)) {
-        return response.status(400).json({ message: 'nombre no puede ser vacío' });
-      }
-      set.push(`nombre = $${idx++}`);
-      params.push(nombre.trim());
-    }
-
-    // idCategoria -> id_categoria
-    if (id_categoria !== undefined) {
-      set.push(`id_categoria = $${idx++}`);
-      params.push(id_categoria);
-    }
-
-    // idMarca -> id_marca
-    if (id_marca !== undefined) {
-      set.push(`id_marca = $${idx++}`);
-      params.push(id_marca);
-    }
-
-    // precioVenta -> precio_venta
-    if (precio_venta !== undefined) {
-      // `isPositiveNumber` -> `is_positive_number`
-      if (!is_positive_number(precio_venta)) {
-        return response.status(400).json({ message: 'precio_venta inválido' });
-      }
-      set.push(`precio_venta = $${idx++}`);
-      params.push(precio_venta);
-    }
-
-    // precioCompra -> precio_compra
-    if (precio_compra !== undefined) {
-      // `isPositiveNumber` -> `is_positive_number`
-      if (!is_positive_number(precio_compra)) {
-        return response.status(400).json({ message: 'precio_compra inválido' });
-      }
-      set.push(`precio_compra = $${idx++}`);
-      params.push(precio_compra);
-    }
-
-    if (stock !== undefined) {
-      // `isPositiveNumber` -> `is_positive_number`
-      if (!is_positive_number(stock)) {
-        return response.status(400).json({ message: 'stock inválido' });
-      }
-      set.push(`stock = $${idx++}`);
-      params.push(stock);
-    }
-
-    if (set.length === 0) {
-      return response.status(400).json({ message: 'No hay campos para actualizar' });
-    }
-
-    // Alias en el SQL cambiados a snake_case o eliminados
-    const update_sql = `
-      UPDATE producto
-      SET ${set.join(', ')}
-      WHERE sku = $${idx}
-      RETURNING 
-        sku, 
-        nombre, 
-        id_categoria, 
-        id_marca, 
-        precio_venta, 
-        precio_compra, 
-        stock
-    `; // Variable SQL renombrada
-
-    params.push(sku);
-
-    const query_result = await query(update_sql, params); // Variable de resultado renombrada
-    const updated = query_result.rows[0];
-
-    if (!updated) {
-      return response.status(404).json({ message: 'Producto no encontrado' });
-    }
-
-    response.json(updated);
-  } catch (error) {
-    next(error);
-  }
 };
 
+// -------------------------------------------------------------------
+
 /**
- * Eliminar producto por SKU
+ * @function delete_producto
+ * @description Elimina un producto por su SKU (string).
+ * @param {Request} request El objeto de la solicitud. Contiene el SKU en `request.params.sku`.
+ * @param {Response} response El objeto de la respuesta de Express.
+ * @param {NextFunction} next La función para pasar el control al siguiente middleware de errores.
+ * @returns {Response} Responde con un estado 204 (No Content) si la eliminación es exitosa, o 400/404/409 si hay errores.
  */
-export const delete_producto = async (request: Request, response: Response, next: NextFunction) => { // Función y parámetros renombrados
-  try {
-    const { sku } = request.params;
+export const delete_producto = async (
+    request: Request,
+    response: Response,
+    next: NextFunction
+) => {
+    try {
+        const { sku } = request.params;
 
-    // `isNonEmptyString` -> `is_non_empty_string`
-    if (!is_non_empty_string(sku)) {
-      return response.status(400).json({ message: 'sku inválido' });
+        // Estandar HTTP: 400 Bad Request si el SKU del parámetro es inválido.
+        if (!is_non_empty_string(sku)) {
+            return response.status(400).json({ message: 'El parámetro SKU es inválido o está vacío.' });
+        }
+
+        const delete_sql = `
+            DELETE FROM producto 
+            WHERE sku = $1 
+            RETURNING sku
+        `;
+
+        const query_result = await query(delete_sql, [sku]);
+        const deleted_producto = query_result.rows[0];
+
+        // Estandar HTTP: 404 Not Found si el recurso no existe.
+        if (!deleted_producto) {
+            return response.status(404).json({ message: 'Producto no encontrado.' });
+        }
+
+        // Estandar HTTP: 204 No Content para la eliminación exitosa.
+        response.status(204).end();
+
+    } catch (error) {
+        // Log solo en caso de error
+        console.error('Error en delete_producto:', error);
+
+        const err = error as PgError;
+
+        // 🚨 Manejo específico de Violación de Clave Foránea (PostgreSQL: '23503')
+        if (err.code === '23503') {
+            // Estandar HTTP: 409 Conflict.
+            return response.status(409).json({
+                message: "No se puede eliminar el producto porque todavía existen ventas u otras entidades que lo referencian."
+            });
+        }
+
+        next(error);
     }
-
-    // Alias en el SQL cambiados a snake_case o eliminados
-    const query_result = await query(
-      `
-      DELETE FROM producto 
-      WHERE sku = $1 
-      RETURNING 
-        sku, 
-        nombre, 
-        id_categoria, 
-        id_marca, 
-        precio_venta, 
-        precio_compra, 
-        stock
-      `,
-      [sku]
-    ); // Variable de resultado renombrada
-
-    const deleted = query_result.rows[0];
-    if (!deleted) {
-      return response.status(404).json({ message: 'Producto no encontrado' });
-    }
-
-    response.json(deleted);
-  } catch (error) {
-    next(error);
-  }
 };
