@@ -63,17 +63,24 @@ export const create_usuario = async (req: Request, res: Response, next: NextFunc
         );
 
         res.status(201).json(resultado.rows[0]); // Respuesta exitosa: Creado
-    } catch (err : any) {
-        // 🚨 LOG DE ERROR AÑADIDO AQUÍ
-        console.error('Error en create_usuario:', err);
+    } catch (err : any) {        
         
-        if (err.code === '23503') {
-            // Se recomienda usar 409 Conflict para errores de integridad de datos.
+        // 💡 Manejo de error de PostgreSQL: Violación de Integridad de Datos (Foreign Key)
+        if (err && err.code === '23503') {
+            // Código 23503: foreign_key_violation (Ej: id_tipo no existe)
             return res.status(409).json({
-                message: "No se puede crear usuario porque el Tipo de Usuario no existe."
+                message: "No se puede crear el usuario porque el Tipo de Usuario no existe."
             });
         }
-        // Pasar cualquier error al middleware de manejo de errores de Express
+
+        // 💡 Manejo de error de PostgreSQL: Violación de Unicidad
+        if (err && err.code === '23505') {
+            // Código 23505: unique_violation (Ej: email ya registrado)
+            return res.status(409).json({ message: 'email ya registrado' });
+        }
+
+        // Pasar cualquier otro error al middleware de manejo de errores de Express
+        console.error('Error en create_usuario:', err);
         next(err);
     }
 };
@@ -207,12 +214,20 @@ export const update_usuario = async (req: Request, res: Response, next: NextFunc
 
         res.json(actualizado);
     } catch (err: any) {
-        console.error('Error en update_usuario:', err);
+        
+        // 💡 Manejo de error de PostgreSQL: Violación de Integridad de Datos (Foreign Key)
+        if (err && err.code === '23503') {
+            // Código 23503: foreign_key_violation (Ej: id_tipo no existe)
+            return res.status(409).json({
+                message: "No se puede actualizar el usuario porque el Tipo de Usuario no existe."
+            });
+        }
         
         // Manejo específico para violación de unicidad del email (Error 23505 en PostgreSQL)
         if (err && err.code === '23505') {
             return res.status(409).json({ message: 'email ya registrado' });
         }
+        console.error('Error en update_usuario:', err);
         next(err);
     }
 };
@@ -271,7 +286,7 @@ export const login_usuario = async (req: Request, res: Response, next: NextFunct
 
         // Buscar el usuario por email. Se requiere la columna 'password' para la verificación
         const resultado = await query(
-            'SELECT id_usuario, password, nombre, email, id_tipo FROM usuario WHERE email=$1 LIMIT 1',
+            'SELECT id_usuario, password, nombre, email, id_tipo, activo FROM usuario WHERE email=$1 LIMIT 1',
             [email.toLowerCase()]
         );
 
@@ -283,6 +298,10 @@ export const login_usuario = async (req: Request, res: Response, next: NextFunct
         const match = await bcrypt.compare(password, usuario.password);
         // Error si la contraseña no coincide (Unauthorized)
         if (!match) return res.status(401).json({ message: 'credenciales inválidas' });
+
+        if (usuario.activo === false) {
+            return res.status(403).json({ message: 'Usuario inactivo. Contacte al administrador.' });
+        }
 
         // Generar el token JWT con los datos clave del usuario
         const token = jwt.sign(

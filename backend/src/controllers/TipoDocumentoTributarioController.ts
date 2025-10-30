@@ -30,7 +30,7 @@ export const create_tipo_documento = async (
     response: Response,
     next: NextFunction
 ) => {
-    try {        
+    try {        
 
         // Estandar HTTP: 400 Bad Request si la carga útil es inválida.
         // Comprobar undefined o empty string
@@ -39,7 +39,7 @@ export const create_tipo_documento = async (
         }
 
         // Comprobar SII
-        if (!is_non_empty_string(request.body.codigo_sii)) {
+        if (request.body.codigo_sii === undefined || request.body.codigo_sii === null) {
             return response.status(400).json({ message: 'El campo codigo_sii es obligatorio y no debe estar vacío.' });
         }
         const nombre_tipo : string = request.body.nombre_tipo.trim();
@@ -55,13 +55,31 @@ export const create_tipo_documento = async (
         // Estandar HTTP: 201 Created para la creación exitosa.
         return response.status(201).json(query_result.rows[0]);
     } catch (error) {
-        // Log solo en caso de error
-        console.error('Error en create_tipo_documento:', error);
-        // Manejo de error de unicidad (PostgreSQL: Código '23505')
+        
         const err = error as PgError;
-        if (err.code === '23505') {
-            return response.status(409).json({ message: 'Ya existe un tipo de documento tributario con ese código SII.' });
+
+        // 💡 Manejo de error de PostgreSQL: Violación de Clave Foránea (23503)
+        // Se usa 409 Conflict ya que la solicitud choca con la integridad del recurso.
+        if (err.code === '23503') {
+            return response.status(409).json({
+                message: "Violación de clave foránea. Asegúrese de que todos los IDs relacionados existen."
+            });
         }
+
+        // 💡 Manejo de error de PostgreSQL: Violación de Unicidad (23505)
+        if (err.code === '23505') {
+            return response.status(409).json({ 
+                message: 'Ya existe un tipo de documento tributario con ese código SII.' 
+            });
+        }
+        
+        // 💡 Manejo de error de PostgreSQL: Violación de NOT NULL (23502)
+        if (err.code === '23502') {
+            return response.status(400).json({ 
+                message: 'Falta un campo obligatorio (NOT NULL violation).' 
+            });
+        }
+        console.error('Error en create_tipo_documento:', error);
         next(error);
     }
 };
@@ -187,14 +205,29 @@ export const update_tipo_documento = async (
         // Estandar HTTP: 200 OK para la actualización exitosa.
         return response.status(200).json(updated_row);
     } catch (error) {
-        // Log solo en caso de error
-        console.error('Error en update_tipo_documento:', error);
-        // Manejo de error de unicidad (PostgreSQL: Código '23505')
+        
         const err = error as PgError;
+
+        // 💡 Manejo de error de PostgreSQL: Violación de Clave Foránea (23503)
+        if (err.code === '23503') {
+            return response.status(409).json({
+                message: "Violación de clave foránea. Asegúrese de que todos los IDs relacionados existen."
+            });
+        }
+
+        // Manejo de error de unicidad (PostgreSQL: Código '23505')
         // Solo el nombre_tipo puede causar unicidad si se aplica una restricción UNIQUE a esa columna
         if (err.code === '23505') {
             return response.status(409).json({ message: 'Ya existe un tipo de documento tributario con ese nombre.' });
         }
+
+        // 💡 Manejo de error de PostgreSQL: Violación de NOT NULL (23502)
+        if (err.code === '23502') {
+            return response.status(400).json({ 
+                message: 'Falta un campo obligatorio (NOT NULL violation).' 
+            });
+        }
+        console.error('Error en create_tipo_documento:', error);
         next(error);
     }
 };
@@ -238,8 +271,7 @@ export const delete_tipo_documento = async (
         return response.status(204).end();
     } catch (error) {
         // Log solo en caso de error
-        console.error('Error en delete_tipo_documento:', error);
-
+        
         const err = error as PgError;
         // 🚨 Manejo específico de Violación de Clave Foránea (PostgreSQL: '23503')
         if (err.code === '23503') {
@@ -250,6 +282,7 @@ export const delete_tipo_documento = async (
             });
         }
         // Para cualquier otro error (5xx, etc.), pasamos el control al middleware de errores.
+        console.error('Error en delete_tipo_documento:', error);
         next(error);
     }
 };

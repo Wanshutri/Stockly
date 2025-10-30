@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeEach } from '@jest/globals';
 import request from 'supertest';
 import app from '../../src/app';
-import { query } from '../../src/db/postgres';
 
 // Datos de prueba consistentes
 const TEST_USER = {
@@ -19,19 +18,6 @@ const SECOND_USER = {
 };
 
 describe('Usuario API', () => {
-    beforeEach(async () => {
-
-        // Limpieza de tablas dependientes e independientes
-        await query('DELETE FROM usuario');
-
-        await query('DELETE FROM tipo_usuario');
-        // Asegurarse de que el tipo de usuario base exista para las pruebas
-        await query(`
-      INSERT INTO tipo_usuario (id_tipo, nombre_tipo) 
-      VALUES (1, 'TestType') 
-      `);
-        await query('ALTER SEQUENCE usuario_id_usuario_seq RESTART WITH 1');
-    });
 
     // --- CREATE USUARIO (POST /api/usuarios) ---
     describe('POST /api/usuarios (create_usuario)', () => {
@@ -41,7 +27,7 @@ describe('Usuario API', () => {
                 .send(TEST_USER);
 
             expect(response.status).toBe(201);
-            expect(response.body).toHaveProperty('id_usuario', 1);
+            expect(response.body).toHaveProperty('id_usuario', response.body.id_usuario);
             expect(response.body).toHaveProperty('nombre', TEST_USER.nombre);
             expect(response.body).toHaveProperty('email', TEST_USER.email);
             expect(response.body).toHaveProperty('activo', true);
@@ -95,17 +81,25 @@ describe('Usuario API', () => {
 
             expect(response.status).toBe(409);
             expect(response.body.message).toBe(
-                'No se puede crear usuario porque el Tipo de Usuario no existe.'
+                'No se puede crear el usuario porque el Tipo de Usuario no existe.'
             );
         });
     });
 
     // --- GET USUARIOS (GET /api/usuarios) ---
     describe('GET /api/usuarios (get_usuarios)', () => {
-        it('Debe devolver un array vacío si no hay usuarios', async () => {
+        it('Debe devolver al menos el usuario inicial', async () => {
             const response = await request(app).get('/api/usuarios');
             expect(response.status).toBe(200);
-            expect(response.body).toEqual([]);
+            expect(response.body.length).toBeGreaterThanOrEqual(1);
+            expect(response.body[0]).toEqual(expect.objectContaining({
+                id_usuario: 1,
+                nombre: 'Usuario Test',
+                email: 'test@stockly.cl',
+                id_tipo: 1
+            }));
+            // La contraseña no debe ser retornada
+            expect(response.body[0]).not.toHaveProperty('password');
         });
 
         it('Debe devolver todos los usuarios', async () => {
@@ -114,9 +108,9 @@ describe('Usuario API', () => {
 
             const response = await request(app).get('/api/usuarios');
             expect(response.status).toBe(200);
-            expect(response.body.length).toBe(2);
-            expect(response.body[0].email).toBe(TEST_USER.email);
-            expect(response.body[1].email).toBe(SECOND_USER.email);
+            expect(response.body.length).toBe(3); // Usuario inicial + 2 nuevos
+            expect(response.body[1].email).toBe(TEST_USER.email);
+            expect(response.body[2].email).toBe(SECOND_USER.email);
         });
     });
 

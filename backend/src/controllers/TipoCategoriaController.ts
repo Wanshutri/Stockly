@@ -51,8 +51,7 @@ export const create_tipo_categoria = async (
         // Estandar HTTP: 201 Created para la creación exitosa.
         return response.status(201).json(query_result.rows[0]);
     } catch (error) {
-        // Log solo en caso de error
-        console.error('Error en create_tipo_categoria:', error);
+        
         
         // ========= ¡AQUÍ ESTÁ LA LÓGICA! =========
         // Manejo de error de unicidad (PostgreSQL: Código '23505')
@@ -62,7 +61,8 @@ export const create_tipo_categoria = async (
             return response.status(409).json({ message: 'Ya existe un tipo de categoría con ese nombre.' });
         }
         // ===========================================
-
+        // Log solo en caso de error
+        console.error('Error en create_tipo_categoria:', error);
         next(error);
     }
 };
@@ -198,8 +198,7 @@ export const update_tipo_categoria = async (
         // Estandar HTTP: 200 OK para la actualización exitosa.
         return response.status(200).json(updated_tipo_categoria);
     } catch (error) {
-        // Log solo en caso de error
-        console.error('Error en update_tipo_categoria:', error);
+        
         
         // ========= ¡AQUÍ ESTÁ LA LÓGICA! =========
         // Manejo de error de unicidad (PostgreSQL: Código '23505')
@@ -209,7 +208,8 @@ export const update_tipo_categoria = async (
             return response.status(409).json({ message: 'Ya existe un tipo de categoría con ese nombre.' });
         }
         // ===========================================
-        
+        // Log solo en caso de error
+        console.error('Error en update_tipo_categoria:', error);
         next(error);
     }
 };
@@ -255,8 +255,7 @@ export const delete_tipo_categoria = async (
         // Estandar HTTP: 204 No Content para la eliminación exitosa.
         return response.status(204).end();
     } catch (error) {
-        // Log solo en caso de error
-        console.error('Error en delete_tipo_categoria:', error);
+        
 
         const err = error as PgError;
         // 🚨 Manejo específico de Violación de Clave Foránea (PostgreSQL: '23503')
@@ -268,6 +267,8 @@ export const delete_tipo_categoria = async (
             });
         }
         // Para cualquier otro error (5xx, etc.), pasamos el control al middleware de errores.
+        // Log solo en caso de error
+        console.error('Error en delete_tipo_categoria:', error);
         next(error);
     }
 };

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from '@jest/globals';
+import { describe, it, expect } from '@jest/globals';
 import request from 'supertest';
 import app from '../../src/app'; // Ajusta la ruta a tu archivo principal 'app'
 import { query } from '../../src/db/postgres'; // Ajusta la ruta a tu config de DB
@@ -14,21 +14,23 @@ import { query } from '../../src/db/postgres'; // Ajusta la ruta a tu config de 
 const PAYLOAD_A = {
     sku: 'SKU-TEST-A',
     nombre: 'Producto A (Prueba)',
-    id_categoria: 1, // <- Creado en beforeEach
-    id_marca: 1,     // <- Creado en beforeEach
+    id_categoria: 1, // <- Ya existe en setupTests (Electrónica)
+    id_marca: 1,     // <- Ya existe en setupTests (Marca Test)
     precio_venta: 100.50,
     precio_compra: 50.25,
-    stock: 10
+    stock: 10,
+    descripcion: 'Descripción del Producto A'
 };
 
 const PAYLOAD_B = {
     sku: 'SKU-TEST-B',
     nombre: 'Producto B (Prueba)',
-    id_categoria: 1, // <- Creado en beforeEach
-    id_marca: 1,     // <- Creado en beforeEach
+    id_categoria: 1, // <- Ya existe en setupTests (Electrónica)
+    id_marca: 1,     // <- Ya existe en setupTests (Marca Test)
     precio_venta: 200,
     precio_compra: 100,
-    stock: 20
+    stock: 20,
+    descripcion: 'Descripción del Producto B'
 };
 
 // -------------------------------------------------------------------
@@ -36,39 +38,6 @@ const PAYLOAD_B = {
 // -------------------------------------------------------------------
 
 describe('Producto API (PK=sku)', () => {
-
-    beforeEach(async () => {
-        // Limpiar tablas en orden inverso de dependencia (dependientes primero)
-        // (Asumiendo que 'detalle_venta' y 'venta' existen y dependen de 'producto')
-        try {
-            await query('DELETE FROM detalle_venta');
-            await query('DELETE FROM venta');
-        } catch (error: any) {
-            // Ignorar si las tablas no existen, pero loguear si es otro error
-            if (error.code !== '42P01') { // 42P01 = undefined_table
-                console.warn("Advertencia: No se pudieron limpiar 'detalle_venta' o 'venta'.", error.message);
-            }
-        }
-        
-        await query('DELETE FROM producto');
-        await query('DELETE FROM tipo_categoria');
-        await query('DELETE FROM marca');
-        
-        // Resetear secuencias de IDs auto-incrementales
-        try {
-            await query('ALTER SEQUENCE tipo_categoria_id_categoria_seq RESTART WITH 1');
-            await query('ALTER SEQUENCE marca_id_marca_seq RESTART WITH 1');
-        } catch (error: any) {
-            console.error("Error reseteando secuencias:", error.message);
-            // Fallar la prueba si las secuencias no existen (crítico)
-            if (error.code === '42P01') throw error;
-        }
-
-        // --- CONFIGURACIÓN DE DEPENDENCIAS ---
-        // Crear registros de FK necesarios (marca y categoría) para las pruebas de producto
-        await query("INSERT INTO marca (nombre_marca) VALUES ('Marca de Prueba')"); // ID será 1
-        await query("INSERT INTO tipo_categoria (nombre_categoria) VALUES ('Categoría de Prueba')"); // ID será 1
-    });
 
     // Función auxiliar para crear un producto
     // Asumimos que la ruta base es /api/productos
@@ -79,10 +48,11 @@ describe('Producto API (PK=sku)', () => {
     };
 
     describe('GET /api/productos', () => {
-        it('Debe devolver un array vacío si no hay productos', async () => {
+        it('Debe devolver al menos el producto inicial', async () => {
             const response = await request(app).get('/api/productos');
             expect(response.status).toBe(200);
-            expect(response.body).toEqual([]);
+            expect(response.body.length).toBeGreaterThanOrEqual(1);
+            expect(response.body[0].sku).toBe('SKU-TEST');
         });
 
         it('Debe devolver todos los productos', async () => {
@@ -91,7 +61,7 @@ describe('Producto API (PK=sku)', () => {
 
             const response = await request(app).get('/api/productos');
             expect(response.status).toBe(200);
-            expect(response.body.length).toBe(2);
+            expect(response.body.length).toBe(3); // Producto inicial + PAYLOAD_A + PAYLOAD_B
         });
     });
 
@@ -110,15 +80,21 @@ describe('Producto API (PK=sku)', () => {
             const response = await createProducto(payloadSinSku);
 
             expect(response.status).toBe(400);
-            expect(response.body.message).toBe('Los campos SKU y nombre son obligatorios y no deben estar vacíos.');
+            expect(response.body.message).toBe('Los campos SKU, nombre y descripcion son obligatorios y no deben estar vacíos.');
         });
 
         it('Debe devolver un error 400 si el nombre está vacío', async () => {
             const response = await createProducto({ ...PAYLOAD_A, nombre: '   ' });
             expect(response.status).toBe(400);
-            expect(response.body.message).toBe('Los campos SKU y nombre son obligatorios y no deben estar vacíos.');
+            expect(response.body.message).toBe('Los campos SKU, nombre y descripcion son obligatorios y no deben estar vacíos.');
         });
-        
+
+        it('Debe devolver un error 400 si descripcion está vacío', async () => {
+            const response = await createProducto({ ...PAYLOAD_A, descripcion: '   ' });
+            expect(response.status).toBe(400);
+            expect(response.body.message).toBe('Los campos SKU, nombre y descripcion son obligatorios y no deben estar vacíos.');
+        });
+
         it('Debe devolver un error 400 si precio_venta es negativo', async () => {
             const response = await createProducto({ ...PAYLOAD_A, precio_venta: -10 });
             expect(response.status).toBe(400);
@@ -141,14 +117,14 @@ describe('Producto API (PK=sku)', () => {
 
         it('Debe devolver un error 409 si id_categoria no existe (violación FK)', async () => {
             const response = await createProducto({ ...PAYLOAD_A, id_categoria: 9999 });
-            
+
             expect(response.status).toBe(409);
             expect(response.body.message).toBe('La categoría (id_categoria) proporcionada no existe.');
         });
 
         it('Debe devolver un error 409 si id_marca no existe (violación FK)', async () => {
             const response = await createProducto({ ...PAYLOAD_A, id_marca: 9999 });
-            
+
             expect(response.status).toBe(409);
             expect(response.body.message).toBe('La marca (id_marca) proporcionada no existe.');
         });
@@ -203,7 +179,7 @@ describe('Producto API (PK=sku)', () => {
 
         it('Debe devolver un error 400 si el body está vacío', async () => {
             await createProducto(PAYLOAD_A);
-            
+
             const response = await request(app)
                 .put(`/api/productos/${PAYLOAD_A.sku}`)
                 .send({}); // Body vacío
@@ -214,7 +190,7 @@ describe('Producto API (PK=sku)', () => {
 
         it('Debe devolver un error 400 si el nombre en la actualización está vacío', async () => {
             await createProducto(PAYLOAD_A);
-            
+
             const response = await request(app)
                 .put(`/api/productos/${PAYLOAD_A.sku}`)
                 .send({ nombre: ' ' }); // Nombre vacío
@@ -262,38 +238,26 @@ describe('Producto API (PK=sku)', () => {
         it('Debe devolver un error 409 si el producto está siendo usado (violación FK)', async () => {
             // 1. Crear el producto
             await createProducto(PAYLOAD_A); // SKU-TEST-A
-            
-            // 2. Crear una venta (asumiendo que 'venta' existe)
-            try {
-                await query("INSERT INTO venta (id_venta, fecha_venta) VALUES (1, NOW()) ON CONFLICT DO NOTHING");
-            } catch (error: any) {
-                if (error.code !== '42P01') console.warn("Advertencia: No se pudo crear la 'venta' de prueba.", error.message);
-            }
-            
-            // 3. Crear un detalle_venta que *use* el SKU-TEST-A
-            try {
-                await query(
-                    `INSERT INTO detalle_venta (id_venta, sku_producto, cantidad, precio_unitario) 
-                     VALUES (1, $1, 2, 100)`,
-                    [PAYLOAD_A.sku]
-                );
-            } catch (error: any) {
-                 if (error.code === '42P01') {
-                    console.warn("ADVERTENCIA: No se pudo probar el DELETE 409 (FK) porque la tabla 'detalle_venta' no existe.");
-                    // Omitir esta prueba si la tabla no existe
-                    return; 
-                 }
-                 throw error; // Lanzar otros errores
-            }
 
+            // 2. Crear una compra (simula una compra existente)
+            await query(
+                "INSERT INTO compra (id_compra, fecha, total, id_cliente, monto_tarjeta, monto_efectivo) VALUES (1, NOW(), 200, 1,1000,3909) ON CONFLICT DO NOTHING"
+            );
+
+            // 3. Crear un detalle_compra que use el producto SKU-TEST-A
+            await query(
+                `INSERT INTO detalle_compra (sku, id_compra, cantidad, subtotal) VALUES ($1, 1, 2, 200) ON CONFLICT DO NOTHING`,
+                [PAYLOAD_A.sku]
+            );
 
             // 4. Intentar eliminar el producto
             const deleteResponse = await request(app).delete(`/api/productos/${PAYLOAD_A.sku}`);
-            
+
             // 5. Verificar el error 409 Conflict
             expect(deleteResponse.status).toBe(409);
             expect(deleteResponse.body.message).toContain('No se puede eliminar el producto porque todavía existen');
         });
+
     });
 
 });

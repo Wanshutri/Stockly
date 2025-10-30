@@ -68,13 +68,12 @@ export const create_tipo_usuario = async (request: Request, response: Response, 
         // Estandar HTTP: 201 Created para la creación exitosa.
         return response.status(201).json(created_row);
     } catch (error) {
-        // Log solo en caso de error
-        console.error('Error en create_tipo_usuario:', error);
         // Manejo de error de unicidad (si existe) en PostgreSQL: Código '23505'
         const err = error as PgError;
         if (err.code === '23505') {
             return response.status(409).json({ message: 'Ya existe un tipo de usuario con ese nombre.' });
         }
+        console.error('Error en create_tipo_usuario:', error);
         next(error);
     }
 };
@@ -164,13 +163,12 @@ export const update_tipo_usuario = async (request: Request, response: Response, 
         // Estandar HTTP: 200 OK para la actualización exitosa.
         return response.status(200).json(updated_row);
     } catch (error) {
-        // Log solo en caso de error
-        console.error('Error en update_tipo_usuario:', error);
         // Manejo de error de unicidad (si existe) en PostgreSQL: Código '23505'
         const err = error as PgError;
         if (err.code === '23505') {
             return response.status(409).json({ message: 'Ya existe un tipo de usuario con ese nombre.' });
         }
+        console.error('Error en update_tipo_usuario:', error);
         next(error);
     }
 };
@@ -201,9 +199,6 @@ export const delete_tipo_usuario = async (request: Request, response: Response, 
         // Estandar HTTP: 204 No Content para la eliminación exitosa.
         return response.status(204).end();
     } catch (error) {
-        // Log solo en caso de error, incluyendo el error de clave foránea
-        console.error('Error en delete_tipo_usuario:', error);
-
         const err = error as PgError;
         // 🚨 Manejo específico de Violación de Clave Foránea (PostgreSQL: '23503')
         if (err.code === '23503') {
@@ -213,6 +208,7 @@ export const delete_tipo_usuario = async (request: Request, response: Response, 
             });
         }
         // Para cualquier otro error (5xx, etc.), pasamos el control al middleware de errores.
+        console.error('Error en delete_tipo_usuario:', error);
         next(error);
     }
 };
