@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken'
 
 const SECRET_KEY = process.env.JWT_SECRET || "clavesecretacambiar" as string
 
-export function middleware(request: NextRequest) {
+export default function proxy(request: NextRequest) {
   const token = request.cookies.get('token')?.value
 
   // Define las rutas públicas
@@ -31,6 +31,5 @@ export function middleware(request: NextRequest) {
 
 // Aplica el middleware a las rutas protegidas
 export const config = {
-  //matcher: ['/dashboard', '/bodega', '/admin/:path*'], DESCOMENTAR
-  matcher: ['/test']
+  matcher: ['/dashboard', '/bodega', '/admin/:path*'],
 }

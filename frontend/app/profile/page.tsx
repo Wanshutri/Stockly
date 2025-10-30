@@ -34,7 +34,7 @@ export default function Page() {
     // Asumiendo que tu layout.tsx ya provee el fondo bg-gray-50 y el navbar/footer
     <main className="flex-grow p-4 mt-8 sm:p-6 lg:p-8">
       <div className="max-w-4xl mx-auto"> {/* Ancho máximo para la página de perfil */}
-        
+
         {/* Título de la Página */}
         <h2 className="text-3xl font-bold tracking-tight text-gray-900 mb-6">
           Mi Perfil
@@ -42,10 +42,10 @@ export default function Page() {
 
         {/* Contenedor Principal (Tarjeta Blanca) */}
         <div className="bg-white shadow-xl rounded-2xl border border-gray-100 overflow-hidden">
-          
+
           {/* Grid para dividir perfil y detalles */}
           <div className="grid grid-cols-1 md:grid-cols-3">
-            
+
             {/* --- COLUMNA IZQUIERDA: Info Básica y Foto --- */}
             <div className="md:col-span-1 bg-gray-50 p-6 border-b md:border-b-0 md:border-r border-gray-200 flex flex-col items-center text-center">
               {/* Foto de Perfil */}
@@ -62,7 +62,7 @@ export default function Page() {
                   <UserCircleIcon className="w-full h-full text-gray-400" />
                 )}
               </div>
-              
+
               {/* Nombre y Rol */}
               <h3 className="text-xl font-semibold text-gray-900">{user.name}</h3>
               <p className="text-sm text-gray-600">{user.role}</p>
@@ -70,7 +70,7 @@ export default function Page() {
 
             {/* --- COLUMNA DERECHA: Detalles y Acciones --- */}
             <div className="md:col-span-2 p-6 space-y-6">
-              
+
               {/* Detalles */}
               <div>
                 <h4 className="text-lg font-semibold text-gray-800 mb-4">Detalles de la Cuenta</h4>
@@ -95,14 +95,14 @@ export default function Page() {
                 <div className="flex flex-col sm:flex-row gap-3">
                   <button className="flex items-center justify-center gap-2 py-2.5 px-4
                                      bg-blue-600 text-white font-semibold rounded-lg shadow-sm
-                                     hover:bg-blue-700 transition-colors
+                                     hover:bg-blue-700 transition-colors cursor-pointer
                                      focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
                     <PencilIcon className="w-4 h-4" />
                     Editar Perfil
                   </button>
                   <button className="flex items-center justify-center gap-2 py-2.5 px-4
                                      bg-white text-gray-700 font-semibold rounded-lg shadow-sm
-                                     border border-gray-300 hover:bg-gray-50 transition-colors
+                                     border border-gray-300 hover:bg-gray-50 transition-colors cursor-pointer
                                      focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2">
                     <KeyIcon className="w-4 h-4" />
                     Cambiar Contraseña

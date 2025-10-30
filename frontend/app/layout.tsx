@@ -37,20 +37,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es">
-      <body className="flex flex-col min-h-screen bg-[var(--background)] antialiased">
-        {/* Navbar fijo, ancho completo, sobre el contenido */}
-        <header className="fixed top-0 left-0 w-full z-50">
-          <Navbar />
-        </header>
-
-        {/* Agregamos un padding-top igual a la altura del navbar */}
-        <main className="flex-grow pt-16">
-          {children}
-        </main>
-
-        <footer className="py-12">
-          <p className="text-center text-sm text-gray-500">© 2025 Stockly. Todos los derechos reservados.</p>
-        </footer>
+      <body>
+        {children}
       </body>
     </html>
   );

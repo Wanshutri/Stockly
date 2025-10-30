@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import StocklyNavbar from "./components/StocklyNavBar/StocklyNavbar";
+import StocklyFooter from "./components/StocklyFooter/StocklyFooter";
 
 // --- Iconos (Los mismos de antes) ---
 const DollarIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -68,174 +70,181 @@ export default function Page() {
   }, []);
 
   return (
-    // Asumiendo que tu layout.tsx ya provee el fondo bg-gray-50 y el navbar/footer
-    <main className="flex-grow p-4 sm:p-6 lg:p-8">
-      <div className="max-w-7xl mx-auto space-y-12">
-        
-        {/* --- Sección 1: Bienvenida y CTA --- */}
-        <div className="flex justify-between items-center">
-          <div>
-            <h2 className="text-3xl font-bold tracking-tight text-gray-900">
-              Bienvenido, Ignacio
-            </h2>
-            <p className="mt-2 text-lg text-gray-600">
-              Aquí tienes un resumen de la actividad de tu negocio.
-            </p>
-          </div>
-          <div>
-            <Link 
-              href="/ventas/pago"
-              className="flex items-center gap-2 py-2 px-4
+    <div>
+      <header>
+        <StocklyNavbar />
+      </header>
+      <main className="flex-grow p-4 sm:p-6 lg:p-8">
+        <div className="max-w-7xl mx-auto space-y-12">
+
+          {/* --- Sección 1: Bienvenida y CTA --- */}
+          <div className="flex justify-between items-center">
+            <div>
+              <h2 className="text-3xl font-bold tracking-tight text-gray-900">
+                Bienvenido, Ignacio
+              </h2>
+              <p className="mt-2 text-lg text-gray-600">
+                Aquí tienes un resumen de la actividad de tu negocio.
+              </p>
+            </div>
+            <div>
+              <Link
+                href="/ventas/pago"
+                className="flex items-center gap-2 py-2 px-4
                          bg-blue-600 text-white font-semibold rounded-lg shadow-sm
                          hover:bg-blue-700 transition-colors
                          focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-            >
-              <PlusIcon className="w-5 h-5" />
-              Nueva Venta
-            </Link>
+              >
+                <PlusIcon className="w-5 h-5" />
+                Nueva Venta
+              </Link>
+            </div>
           </div>
-        </div>
 
-        {/* --- Sección 2: Estadísticas Rápidas (KPIs) --- */}
-        <div>
-          <h3 className="text-xl font-semibold text-gray-900 mb-4 tracking-tight">
-            Resumen de Hoy
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            
-            {/* Estado de Carga (Skeletons) */}
-            {isLoading ? (
-              <>
-                <KpiCardSkeleton />
-                <KpiCardSkeleton />
-                <KpiCardSkeleton />
-              </>
-            ) : (
-              /* Datos Cargados */
-              <>
-                {/* KPI Card 1 */}
-                <div className="bg-white p-6 rounded-2xl shadow-lg border border-gray-100 flex items-center gap-5
+          {/* --- Sección 2: Estadísticas Rápidas (KPIs) --- */}
+          <div>
+            <h3 className="text-xl font-semibold text-gray-900 mb-4 tracking-tight">
+              Resumen de Hoy
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+              {/* Estado de Carga (Skeletons) */}
+              {isLoading ? (
+                <>
+                  <KpiCardSkeleton />
+                  <KpiCardSkeleton />
+                  <KpiCardSkeleton />
+                </>
+              ) : (
+                /* Datos Cargados */
+                <>
+                  {/* KPI Card 1 */}
+                  <div className="bg-white p-6 rounded-2xl shadow-lg border border-gray-100 flex items-center gap-5
                                 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-xl hover:border-blue-200">
-                  <div className="bg-blue-100 p-3 rounded-full">
-                    <DollarIcon className="w-7 h-7 text-blue-600" />
+                    <div className="bg-blue-100 p-3 rounded-full">
+                      <DollarIcon className="w-7 h-7 text-blue-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-500">Ventas de Hoy</p>
+                      <p className="text-2xl font-semibold text-gray-900">$1.250.000</p>
+                      <p className="text-xs text-green-600">+5.2% vs ayer</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-500">Ventas de Hoy</p>
-                    <p className="text-2xl font-semibold text-gray-900">$1.250.000</p>
-                    <p className="text-xs text-green-600">+5.2% vs ayer</p>
+
+                  {/* KPI Card 2 */}
+                  <div className="bg-white p-6 rounded-2xl shadow-lg border border-gray-100 flex items-center gap-5
+                                transition-all duration-300 transform hover:-translate-y-1 hover:shadow-xl hover:border-blue-200">
+                    <div className="bg-blue-100 p-3 rounded-full">
+                      <ArchiveBoxIcon className="w-7 h-7 text-blue-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-500">Stock Bajo</p>
+                      <p className="text-2xl font-semibold text-gray-900">8 Productos</p>
+                      <p className="text-xs text-red-600">Requieren reposición</p>
+                    </div>
+                  </div>
+
+                  {/* KPI Card 3 */}
+                  <div className="bg-white p-6 rounded-2xl shadow-lg border border-gray-100 flex items-center gap-5
+                                transition-all duration-300 transform hover:-translate-y-1 hover:shadow-xl hover:border-blue-200">
+                    <div className="bg-blue-100 p-3 rounded-full">
+                      <UserGroupIcon className="w-7 h-7 text-blue-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-500">Clientes Nuevos (Mes)</p>
+                      <p className="text-2xl font-semibold text-gray-900">42</p>
+                      <p className="text-xs text-gray-500">Actividad reciente</p>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* --- Sección 3: Acceso Rápido (Navegación) --- */}
+          <div>
+            <h3 className="text-xl font-semibold text-gray-900 mb-4 tracking-tight">
+              Acceso Rápido
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+              {/* Nav Card 1: Ventas */}
+              <Link href="/ventas" className="block group">
+                <div className="bg-white p-6 rounded-2xl shadow-lg border border-gray-100
+                              transition-all duration-300 transform hover:-translate-y-1
+                              hover:shadow-xl hover:border-blue-200
+                              h-full flex flex-col">
+                  <div className="bg-blue-100 p-3 rounded-full w-min">
+                    <CreditCardIcon className="w-7 h-7 text-blue-600" />
+                  </div>
+                  <div className="mt-4">
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      Módulo de Ventas
+                    </h3>
+                    <p className="mt-1 text-sm text-gray-600">
+                      Accede a boletas, pagos y reportes de ventas.
+                    </p>
+                  </div>
+                  <div className="mt-auto pt-4 flex justify-end">
+                    <ArrowRightIcon className="w-5 h-5 text-gray-400 group-hover:text-blue-600 transition-colors" />
                   </div>
                 </div>
+              </Link>
 
-                {/* KPI Card 2 */}
-                <div className="bg-white p-6 rounded-2xl shadow-lg border border-gray-100 flex items-center gap-5
-                                transition-all duration-300 transform hover:-translate-y-1 hover:shadow-xl hover:border-blue-200">
-                  <div className="bg-blue-100 p-3 rounded-full">
+              {/* Nav Card 2: Bodega */}
+              <Link href="/bodega" className="block group">
+                <div className="bg-white p-6 rounded-2xl shadow-lg border border-gray-100
+                              transition-all duration-300 transform hover:-translate-y-1
+                              hover:shadow-xl hover:border-blue-200
+                              h-full flex flex-col">
+                  <div className="bg-blue-100 p-3 rounded-full w-min">
                     <ArchiveBoxIcon className="w-7 h-7 text-blue-600" />
                   </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-500">Stock Bajo</p>
-                    <p className="text-2xl font-semibold text-gray-900">8 Productos</p>
-                    <p className="text-xs text-red-600">Requieren reposición</p>
+                  <div className="mt-4">
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      Módulo de Bodega
+                    </h3>
+                    <p className="mt-1 text-sm text-gray-600">
+                      Gestiona inventario, productos y proveedores.
+                    </p>
+                  </div>
+                  <div className="mt-auto pt-4 flex justify-end">
+                    <ArrowRightIcon className="w-5 h-5 text-gray-400 group-hover:text-blue-600 transition-colors" />
                   </div>
                 </div>
+              </Link>
 
-                {/* KPI Card 3 */}
-                <div className="bg-white p-6 rounded-2xl shadow-lg border border-gray-100 flex items-center gap-5
-                                transition-all duration-300 transform hover:-translate-y-1 hover:shadow-xl hover:border-blue-200">
-                  <div className="bg-blue-100 p-3 rounded-full">
-                    <UserGroupIcon className="w-7 h-7 text-blue-600" />
+              {/* Nav Card 3: Administración */}
+              <Link href="/admin" className="block group">
+                <div className="bg-white p-6 rounded-2xl shadow-lg border border-gray-100
+                              transition-all duration-300 transform hover:-translate-y-1
+                              hover:shadow-xl hover:border-blue-200
+                              h-full flex flex-col">
+                  <div className="bg-blue-100 p-3 rounded-full w-min">
+                    <CogIcon className="w-7 h-7 text-blue-600" />
                   </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-500">Clientes Nuevos (Mes)</p>
-                    <p className="text-2xl font-semibold text-gray-900">42</p>
-                    <p className="text-xs text-gray-500">Actividad reciente</p>
+                  <div className="mt-4">
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      Administración
+                    </h3>
+                    <p className="mt-1 text-sm text-gray-600">
+                      Configura usuarios, permisos y ajustes del sistema.
+                    </p>
+                  </div>
+                  <div className="mt-auto pt-4 flex justify-end">
+                    <ArrowRightIcon className="w-5 h-5 text-gray-400 group-hover:text-blue-600 transition-colors" />
                   </div>
                 </div>
-              </>
-            )}
+              </Link>
+
+            </div>
           </div>
+
         </div>
-
-        {/* --- Sección 3: Acceso Rápido (Navegación) --- */}
-        <div>
-          <h3 className="text-xl font-semibold text-gray-900 mb-4 tracking-tight">
-            Acceso Rápido
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            
-            {/* Nav Card 1: Ventas */}
-            <Link href="/ventas" className="block group">
-              <div className="bg-white p-6 rounded-2xl shadow-lg border border-gray-100
-                              transition-all duration-300 transform hover:-translate-y-1
-                              hover:shadow-xl hover:border-blue-200
-                              h-full flex flex-col">
-                <div className="bg-blue-100 p-3 rounded-full w-min">
-                  <CreditCardIcon className="w-7 h-7 text-blue-600" />
-                </div>
-                <div className="mt-4">
-                  <h3 className="text-lg font-semibold text-gray-900">
-                    Módulo de Ventas
-                  </h3>
-                  <p className="mt-1 text-sm text-gray-600">
-                    Accede a boletas, pagos y reportes de ventas.
-                  </p>
-                </div>
-                <div className="mt-auto pt-4 flex justify-end">
-                  <ArrowRightIcon className="w-5 h-5 text-gray-400 group-hover:text-blue-600 transition-colors" />
-                </div>
-              </div>
-            </Link>
-
-            {/* Nav Card 2: Bodega */}
-            <Link href="/bodega" className="block group">
-              <div className="bg-white p-6 rounded-2xl shadow-lg border border-gray-100
-                              transition-all duration-300 transform hover:-translate-y-1
-                              hover:shadow-xl hover:border-blue-200
-                              h-full flex flex-col">
-                <div className="bg-blue-100 p-3 rounded-full w-min">
-                  <ArchiveBoxIcon className="w-7 h-7 text-blue-600" />
-                </div>
-                <div className="mt-4">
-                  <h3 className="text-lg font-semibold text-gray-900">
-                    Módulo de Bodega
-                  </h3>
-                  <p className="mt-1 text-sm text-gray-600">
-                    Gestiona inventario, productos y proveedores.
-                  </p>
-                </div>
-                <div className="mt-auto pt-4 flex justify-end">
-                  <ArrowRightIcon className="w-5 h-5 text-gray-400 group-hover:text-blue-600 transition-colors" />
-                </div>
-              </div>
-            </Link>
-
-            {/* Nav Card 3: Administración */}
-            <Link href="/admin" className="block group">
-              <div className="bg-white p-6 rounded-2xl shadow-lg border border-gray-100
-                              transition-all duration-300 transform hover:-translate-y-1
-                              hover:shadow-xl hover:border-blue-200
-                              h-full flex flex-col">
-                <div className="bg-blue-100 p-3 rounded-full w-min">
-                  <CogIcon className="w-7 h-7 text-blue-600" />
-                </div>
-                <div className="mt-4">
-                  <h3 className="text-lg font-semibold text-gray-900">
-                    Administración
-                  </h3>
-                  <p className="mt-1 text-sm text-gray-600">
-                    Configura usuarios, permisos y ajustes del sistema.
-                  </p>
-                </div>
-                <div className="mt-auto pt-4 flex justify-end">
-                  <ArrowRightIcon className="w-5 h-5 text-gray-400 group-hover:text-blue-600 transition-colors" />
-                </div>
-              </div>
-            </Link>
-
-          </div>
-        </div>
-
-      </div>
-    </main>
+      </main>
+      <footer className="absolute bottom-0 left-0 right-0 text-white p-4">
+        <StocklyFooter />
+      </footer>
+    </div>
   );
 }

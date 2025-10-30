@@ -160,7 +160,7 @@ function UserMenu({ userName, userRole, onLogout }: { userName?: string; userRol
 // -----------------------------
 // Navbar principal
 // -----------------------------
-export default function Navbar({
+export default function StocklyNavbar({
   userName = 'Ignacio Cordero', userRole = 'Jefe de Proyecto',
   navLinks = [
     { name: 'Bodega', href: '/bodega' },
@@ -187,7 +187,7 @@ export default function Navbar({
 
   return (
     <div>
-      <nav className="bg-[var(--color-claro)] border-b border-gray-200 shadow-sm">
+      <nav className="bg-[var(--color-claro)] border-b border-gray-200 shadow-sm w-full top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="h-16 flex items-center justify-between">
             {/* LEFT: logo + desktop nav */}

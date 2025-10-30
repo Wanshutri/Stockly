@@ -10,10 +10,8 @@ export default function LoginLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="es">
-      <body className="bg-[var(--background)] flex items-center justify-center min-h-screen">
-        {children}
-      </body>
-    </html>
+    <div>
+      {children}
+    </div>
   );
 }
