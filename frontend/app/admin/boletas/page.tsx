@@ -3,6 +3,9 @@
 import React from "react";
 import Link from "next/link"; // Link se usa para la paginación
 
+import StocklyNavbar from '../../components/StocklyNavBar/StocklyNavbar';
+import StocklyFooter from "@/app/components/StocklyFooter/StocklyFooter";
+
 // --- Iconos para la UI ---
 const PrintIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
@@ -33,10 +36,10 @@ export default function Page() {
   const [selectedBoleta, setSelectedBoleta] = React.useState(1234);
 
   return (
-    // Asumiendo que tu layout.tsx ya provee el fondo bg-gray-50 y el navbar/footer
     <main className="flex-grow p-4 sm:p-6 lg:p-8">
-      <div className="max-w-7xl mx-auto">
-        
+      <StocklyNavbar />
+      <div className="max-w-7xl mt-12 mx-auto">
+
         {/* Título de la Página */}
         <h2 className="text-3xl font-bold tracking-tight text-gray-900 mb-6">
           Reimpresión de Boletas
@@ -44,26 +47,26 @@ export default function Page() {
 
         {/* Contenedor Principal (Tarjeta Blanca Única) */}
         <div className="bg-white shadow-xl rounded-2xl border border-gray-100 overflow-hidden">
-          
+
           {/* --- CORRECCIÓN DE ESPACIO ---
             Cambiado de 'p-6' a 'p-8' para dar más "aire" a todo el contenido.
           */}
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_2fr_1fr] gap-8 p-8">
-            
+
             {/* --- COLUMNA 1: LISTA DE BOLETAS --- */}
             <div className="flex flex-col pr-4 border-r border-gray-200">
               <h4 className="font-semibold text-gray-800 mb-3">Boletas Recientes</h4>
-              
+
               <div className="border rounded-lg max-h-[400px] overflow-y-auto flex-grow">
                 {[1234, 1235, 1236, 1237].map((id) => (
                   <button
                     key={id}
                     onClick={() => setSelectedBoleta(id)}
                     className={`w-full flex items-center gap-3 p-3 text-left border-b last:border-b-0 transition-colors
-                                ${selectedBoleta === id 
-                                  ? 'bg-blue-50 text-blue-700' 
-                                  : 'text-gray-700 hover:bg-gray-100'
-                                }`}
+                                ${selectedBoleta === id
+                        ? 'bg-blue-50 text-blue-700'
+                        : 'text-gray-700 hover:bg-gray-100'
+                      }`}
                   >
                     <BoletaIcon className="w-5 h-5 flex-shrink-0" />
                     <div>
@@ -73,7 +76,7 @@ export default function Page() {
                   </button>
                 ))}
               </div>
-              
+
               <div className="flex justify-center items-center gap-2 pt-4 text-sm mt-auto">
                 <Link href="#" className="px-3 py-1 rounded bg-gray-200 text-gray-800 font-medium hover:bg-gray-300">1</Link>
                 <Link href="#" className="px-3 py-1 rounded hover:bg-gray-100 text-gray-600">2</Link>
@@ -105,14 +108,14 @@ export default function Page() {
                 <span className="text-sm font-medium text-gray-600">Cajero</span>
                 <p className="text-xl font-semibold text-gray-900">Liam Ley</p>
               </div>
-              
+
               <button className="w-full flex items-center justify-center gap-2 py-3 px-4
                                  bg-blue-600 text-white font-semibold rounded-lg shadow-sm
                                  hover:bg-blue-700 transition-colors">
                 <PrintIcon className="w-5 h-5" />
                 Imprimir Boleta
               </button>
-              
+
               <button className="w-full flex items-center justify-center gap-2 py-3 px-4
                                  bg-white text-gray-700 font-semibold rounded-lg shadow-sm
                                  border border-gray-300 hover:bg-gray-50 transition-colors">
@@ -130,6 +133,7 @@ export default function Page() {
           </div>
         </div>
       </div>
+      <StocklyFooter/>
     </main>
   );
 }

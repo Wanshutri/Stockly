@@ -37,9 +37,9 @@ services:
       - "80:80"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-    depends_on:
+    #depends_on:
       #- backend
-      - frontend
+      #- frontend
     networks:
       - backend-net
       - frontend-net

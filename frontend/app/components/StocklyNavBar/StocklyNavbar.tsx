@@ -3,12 +3,13 @@
 import Link from 'next/link';
 import React, { useEffect, useRef, useState, memo } from 'react';
 import { usePathname } from 'next/navigation';
+import { signOut, useSession } from 'next-auth/react';
 
 // -----------------------------
 // Tipos
 // -----------------------------
 interface NavLink { name: string; href: string; active?: boolean; }
-interface NavbarProps { userName?: string; userRole?: string; navLinks?: NavLink[]; onLogout?: () => void; }
+interface NavbarProps { navLinks?: NavLink[]; }
 
 // -----------------------------
 // Hooks Personalizados (Compactados)
@@ -127,12 +128,16 @@ function UserInfo({ userName, userRole }: { userName?: string; userRole?: string
 }
 
 // Desktop user dropdown menu (md+)
-function UserMenu({ userName, userRole, onLogout }: { userName?: string; userRole?: string; onLogout?: () => void; }) {
+function UserMenu({ userName, userRole }: { userName?: string; userRole?: string; }) {
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement | null>(null); // Uso de 'null' corregido
+  const ref = useRef<HTMLDivElement | null>(null);
 
   useClickOutside(ref, () => setOpen(false));
   useEscapeKey(() => setOpen(false));
+
+  const handleLogout = () => {
+    signOut({ callbackUrl: '/auth/login' });
+  };
 
   return (
     <div className="relative" ref={ref}>
@@ -147,8 +152,8 @@ function UserMenu({ userName, userRole, onLogout }: { userName?: string; userRol
           open ? 'opacity-100' : 'opacity-0 pointer-events-none')}>
         <div className="py-1">
           <Link href="/profile" role="menuitem" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Ver Perfil</Link>
-          <button type="button" role="menuitem" onClick={() => onLogout?.()}
-            className="w-full text-left block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+          <button type="button" role="menuitem" onClick={handleLogout}
+            className="w-full text-left block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer">
             Cerrar Sesión
           </button>
         </div>
@@ -161,14 +166,15 @@ function UserMenu({ userName, userRole, onLogout }: { userName?: string; userRol
 // Navbar principal
 // -----------------------------
 export default function StocklyNavbar({
-  userName = 'Ignacio Cordero', userRole = 'Jefe de Proyecto',
   navLinks = [
     { name: 'Bodega', href: '/bodega' },
     { name: 'Ventas', href: '/ventas' },
     { name: 'Administracion del sistema', href: '/admin' },
   ],
-  onLogout,
 }: NavbarProps) {
+  const { data: session, status } = useSession();
+  const [userData, setUserData] = useState<any | null>(null);
+  const [loadingUser, setLoadingUser] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const panelRef = useRef<HTMLDivElement | null>(null);
   const pathname = usePathname();
@@ -179,6 +185,50 @@ export default function StocklyNavbar({
   useMediaQueryChange('(min-width: 640px)', () => setIsOpen(false));
 
   useEffect(() => { if (isOpen && panelRef.current) panelRef.current.focus(); }, [isOpen]);
+
+  // Fetch user info from API using session.user.id (stored in token/session)
+  useEffect(() => {
+    const id = session?.user?.id;
+    if (!id) {
+      setUserData(null);
+      return;
+    }
+
+    let mounted = true;
+
+    const fetchUser = async () => {
+      try {
+        setLoadingUser(true);
+        const URL = process.env.APP_URL || 'http://localhost:5000';
+        const res = await fetch(`${URL}/api/usuarios/${id}`);
+        if (!mounted) return;
+        if (!res.ok) {
+          console.error('Error fetching user:', res.status);
+          setUserData(null);
+          setLoadingUser(false);
+          return;
+        }
+        const data = await res.json();
+
+        // Rescatar Tipo de usuario
+        const tipoRes = await fetch(`${URL}/api/tipos-usuario/${data.id_tipo}`);
+        if (tipoRes.ok) {
+          const tipoData = await tipoRes.json();
+          data.tipo_usuario = tipoData.nombre_tipo;
+        }
+        setUserData(data);
+        console.log('Fetched user data:', userData);
+      } catch (err) {
+        console.error('Failed to fetch user:', err);
+        setUserData(null);
+      } finally {
+        if (mounted) setLoadingUser(false);
+      }
+    };
+
+    fetchUser();
+    return () => { mounted = false };
+  }, [session?.user?.id]);
 
   const enhancedLinks = navLinks.map((l) => ({
     ...l,
@@ -203,9 +253,21 @@ export default function StocklyNavbar({
 
             {/* RIGHT: user + hamburger */}
             <div className="flex items-center gap-3">
-              {/* Desktop: show user menu */}
+              {/* Desktop: mostrar menú de usuario o botón de login */}
               <div className="hidden md:flex md:items-center md:gap-3">
-                <UserMenu userName={userName} userRole={userRole} onLogout={onLogout} />
+                {session ? (
+                  <UserMenu
+                    userName={userData?.nombre}
+                    userRole={userData?.tipo_usuario}
+                  />
+                ) : (
+                  <Link
+                    href="/auth/login"
+                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+                  >
+                    Iniciar Sesión
+                  </Link>
+                )}
               </div>
 
               {/* Hamburger - visible on mobile */}
@@ -238,22 +300,44 @@ export default function StocklyNavbar({
             </div>
 
             {/* Mobile nav: ahora usa enhancedLinks */}
-            <div className="mt-4">
-              <NavItems navLinks={enhancedLinks} onClick={() => setIsOpen(false)} vertical />
-            </div>
-
-            <div className="mt-4 border-t border-gray-100 pt-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-sm font-medium text-gray-800">{userName}</div>
-                  <div className="text-xs text-gray-500">{userRole}</div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <Link href="/profile" className="text-sm font-medium px-3 py-2 rounded-md hover:bg-gray-50 transition">Ver Perfil</Link>
-                  <button type="button" onClick={() => onLogout?.()} className="text-sm font-medium px-3 py-2 rounded-md hover:bg-red-50 transition text-gray-700">Cerrar Sesión</button>
-                </div>
+            {/* Mobile nav: solo mostrar si hay sesión */}
+            {session && (
+              <div className="mt-4">
+                <NavItems navLinks={enhancedLinks} onClick={() => setIsOpen(false)} vertical />
               </div>
+            )}
+
+            {/* Mobile user info */}
+            <div className="mt-4 border-t border-gray-100 pt-4">
+              {session ? (
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-sm font-medium text-gray-800">{userData?.nombre}</div>
+                    <div className="text-xs text-gray-500">{userData?.tipo_usuario}</div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <Link href="/profile" className="text-sm font-medium px-3 py-2 rounded-md hover:bg-gray-50 transition">
+                      Ver Perfil
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={() => signOut({ callbackUrl: '/auth/login' })}
+                      className="text-sm font-medium px-3 py-2 rounded-md hover:bg-red-50 transition text-gray-700"
+                    >
+                      Cerrar Sesión
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <Link
+                  href="/auth/login"
+                  className="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+                  onClick={() => setIsOpen(false)}
+                >
+                  Iniciar Sesión
+                </Link>
+              )}
             </div>
           </div>
         </div>

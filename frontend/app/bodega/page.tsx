@@ -10,6 +10,8 @@ import StocklyLargeButtonCard from "@/app/components/StoclyLargeButtonCard/Stocl
 
 // Importaciones de iconos
 import { Search, Plus, List, Tag, MoreVertical, Boxes, Database, Upload } from "lucide-react";
+import StocklyNavbar from '../components/StocklyNavBar/StocklyNavbar';
+import StocklyFooter from '../components/StocklyFooter/StocklyFooter';
 
 // --- Constantes ---
 
@@ -168,105 +170,110 @@ export default function InventoryPage() {
   const { title, columns, data, renderItem } = getTableViewData(); // Obtiene el set de datos actual (¡ya filtrado!)
 
   return (
-    // Contenedor principal
-    <div className="min-h-screen bg-gray-100 p-4 sm:p-6 lg:p-8">
-      <div className="mx-auto max-w-7xl">
+    <div>
+      <header>
+        <StocklyNavbar />
+      </header>
+      <main>
+        <div className="p-5 sm:p-6 lg:p-8">
+          <div className="mx-auto max-w-7xl">
+            <div className="flex justify-between items-start sm:items-center mb-4">
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Gestión de Inventario</h1>
+              {/* Botón de acción primaria: Agregar Nuevo Producto */}
+              <button className="inline-flex items-center cursor-pointer rounded-lg border border-transparent bg-indigo-600 px-3 py-1.5 sm:px-4 sm:py-2 text-sm font-medium text-white shadow-md hover:bg-indigo-700 transition duration-150">
+                <Plus className="h-5 w-5 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Crear {activeView === 'products' ? 'Producto' : activeView === 'brands' ? 'Marca' : 'Categoría'}</span> {/* Se ajusta el texto */}
+              </button>
+            </div>
 
-        {/* 1. HEADER (Título, Botón Agregar) */}
-        <header className="mb-6">
-          <div className="flex justify-between items-start sm:items-center mb-4">
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Gestión de Inventario 📦</h1>
-            {/* Botón de acción primaria: Agregar Nuevo Producto */}
-            <button className="inline-flex items-center cursor-pointer rounded-lg border border-transparent bg-indigo-600 px-3 py-1.5 sm:px-4 sm:py-2 text-sm font-medium text-white shadow-md hover:bg-indigo-700 transition duration-150">
-              <Plus className="h-5 w-5 mr-1 sm:mr-2" />
-              <span className="hidden sm:inline">Crear {activeView === 'products' ? 'Producto' : activeView === 'brands' ? 'Marca' : 'Categoría'}</span> {/* Se ajusta el texto */}
-            </button>
-          </div>
-
-          {/* Barra de Búsqueda Global y Vistas (Ahora horizontal) */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            {/* Búsqueda Principal - MODIFICADO */}
-            <div className="relative rounded-lg shadow-sm w-full md:w-2/3">
-              <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                <Search className="h-5 w-5 text-gray-400" aria-hidden="true" />
+            {/* Barra de Búsqueda Global y Vistas (Ahora horizontal) */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+              {/* Búsqueda Principal - MODIFICADO */}
+              <div className="relative rounded-lg shadow-sm w-full md:w-2/3">
+                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                  <Search className="h-5 w-5 text-gray-400" aria-hidden="true" />
+                </div>
+                <input
+                  type="search"
+                  className="block w-full rounded-lg border-gray-300 py-2 pl-10 pr-3 text-sm focus:border-indigo-500 focus:ring-indigo-500"
+                  placeholder={`Buscar en ${title}...`}
+                  value={searchTerm} // Vincula el valor al estado
+                  onChange={(e) => setSearchTerm(e.target.value)} // Actualiza el estado al escribir
+                />
               </div>
-              <input
-                type="search"
-                className="block w-full rounded-lg border-gray-300 py-2 pl-10 pr-3 text-sm focus:border-indigo-500 focus:ring-indigo-500"
-                placeholder={`Buscar en ${title}...`}
-                value={searchTerm} // Vincula el valor al estado
-                onChange={(e) => setSearchTerm(e.target.value)} // Actualiza el estado al escribir
-              />
-            </div>
-            {/* Vistas (Botones que cambian el contenido de la tabla) */}
-            <div className="flex flex-row gap-2 overflow-x-auto pb-1 md:w-1/3 md:justify-end">
-              {NAV_ITEMS.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <StocklySmallButton
-                    key={item.viewId}
-                    label={item.label}
-                    icon={<Icon className="h-4 w-4" />}
-                    active={item.viewId === activeView}
-                    onClick={() => {
-                      setActiveView(item.viewId); // Cambia la vista
-                      setSearchTerm(''); // **NUEVO: Limpia el buscador al cambiar de pestaña**
-                    }}
-                  />
-                );
-              })}
-            </div>
-          </div>
-        </header>
-
-        {/* 2. --- ESTRUCTURA PRINCIPAL DE 2 COLUMNAS --- */}
-        <div className="grid grid-cols-12 gap-6">
-
-          {/* COLUMNA 1: LISTA DINÁMICA DE DATOS */}
-          <div className="col-span-12 lg:col-span-8">
-            <h2 className="text-xl font-semibold text-gray-700 mb-3">{title}</h2> {/* TÍTULO DINÁMICO */}
-            <div className="bg-white shadow-xl rounded-xl overflow-x-auto ring-1 ring-gray-200">
-              <StocklyDataList columns={columns}>
-                {/* COLUMNAS DINÁMICAS */}
-                {data.length > 0 ? (
-                  data.map((item) => (
-                    // DATOS DINÁMICOS
-                    <StocklyDataListItem
-                      key={item.id}
-                      selected={item.id === 1 && activeView === 'products' && !searchTerm} // Ajuste para selección por defecto
-                      cells={renderItem(item)} // CELDAS DINÁMICAS
+              {/* Vistas (Botones que cambian el contenido de la tabla) */}
+              <div className="flex flex-row gap-2 overflow-x-auto pb-1 md:w-1/3 md:justify-end mb-4">
+                {NAV_ITEMS.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <StocklySmallButton
+                      key={item.viewId}
+                      label={item.label}
+                      icon={<Icon className="h-4 w-4" />}
+                      active={item.viewId === activeView}
+                      onClick={() => {
+                        setActiveView(item.viewId); // Cambia la vista
+                        setSearchTerm(''); // **NUEVO: Limpia el buscador al cambiar de pestaña**
+                      }}
                     />
-                  ))
-                ) : (
-                  // Mensaje si no hay resultados
-                  <div className="p-4 text-center text-gray-500">
-                    No se encontraron resultados para "{searchTerm}" en {activeView}.
-                  </div>
-                )}
-              </StocklyDataList>
-
+                  );
+                })}
+              </div>
             </div>
-          </div>
 
-          {/* COLUMNA 2: ACCIONES Y DETALLE */}
-          <div className="col-span-12 lg:col-span-4 flex flex-col gap-6">
-            <h2 className="text-xl font-semibold text-gray-700 mb-0 hidden lg:block">Acciones y Detalle Rápido</h2>
+            {/* 2. --- ESTRUCTURA PRINCIPAL DE 2 COLUMNAS --- */}
+            <div className="grid grid-cols-12 gap-6">
 
-            {/* Panel de Acciones Rápidas */}
-            <div className="flex flex-col gap-3">
-              <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Acciones Masivas</h3>
-              <StocklyLargeButtonCard
-                title="Cargar Masivamente"
-                icon={<Upload className="h-6 w-6 text-green-600" />}
-              />
-              <StocklyLargeButtonCard
-                title="Generar Reporte"
-                icon={<Database className="h-6 w-6 text-indigo-600" />}
-              />
+              {/* COLUMNA 1: LISTA DINÁMICA DE DATOS */}
+              <div className="col-span-12 lg:col-span-8">
+                <h2 className="text-xl font-semibold text-gray-700 mb-3">{title}</h2> {/* TÍTULO DINÁMICO */}
+                <div className="bg-white shadow-xl rounded-xl overflow-x-auto ring-1 ring-gray-200">
+                  <StocklyDataList columns={columns}>
+                    {/* COLUMNAS DINÁMICAS */}
+                    {data.length > 0 ? (
+                      data.map((item) => (
+                        // DATOS DINÁMICOS
+                        <StocklyDataListItem
+                          key={item.id}
+                          selected={item.id === 1 && activeView === 'products' && !searchTerm} // Ajuste para selección por defecto
+                          cells={renderItem(item)} // CELDAS DINÁMICAS
+                        />
+                      ))
+                    ) : (
+                      // Mensaje si no hay resultados
+                      <div className="p-4 text-center text-gray-500">
+                        No se encontraron resultados para "{searchTerm}" en {activeView}.
+                      </div>
+                    )}
+                  </StocklyDataList>
+
+                </div>
+              </div>
+
+              {/* COLUMNA 2: ACCIONES Y DETALLE */}
+              <div className="col-span-12 lg:col-span-4 flex flex-col gap-6">
+                <h2 className="text-xl font-semibold text-gray-700 mb-0 hidden lg:block">Acciones y Detalle Rápido</h2>
+
+                {/* Panel de Acciones Rápidas */}
+                <div className="flex flex-col gap-3">
+                  <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Acciones Masivas</h3>
+                  <StocklyLargeButtonCard
+                    title="Cargar Masivamente"
+                    icon={<Upload className="h-6 w-6 text-green-600" />}
+                  />
+                  <StocklyLargeButtonCard
+                    title="Generar Reporte"
+                    icon={<Database className="h-6 w-6 text-indigo-600" />}
+                  />
+                </div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      </main>
+      <footer>
+        <StocklyFooter />
+      </footer>
     </div>
   );
 }

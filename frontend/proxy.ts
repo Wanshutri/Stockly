@@ -1,35 +1,53 @@
-import { NextResponse, type NextRequest } from 'next/server'
-import jwt from 'jsonwebtoken'
+import { withAuth } from 'next-auth/middleware';
+import { NextResponse } from 'next/server';
 
-const SECRET_KEY = process.env.JWT_SECRET || "clavesecretacambiar" as string
-
-export default function proxy(request: NextRequest) {
-  const token = request.cookies.get('token')?.value
-
-  // Define las rutas públicas
-  const publicPaths = ['/auth/login', '/auth/forgot-password']
-
-  // Permitir el acceso a rutas públicas
-  if (publicPaths.some(path => request.nextUrl.pathname.startsWith(path))) {
-    return NextResponse.next()
-  }
-
-  // Si no hay token -> redirigir al login
-  if (!token) {
-    return NextResponse.redirect(new URL('/auth/login', request.url))
-  }
-
-  try {
-    // Verificamos el token
-    jwt.verify(token, SECRET_KEY)
-    return NextResponse.next()
-  } catch {
-    // Token inválido o expirado -> redirigir
-    return NextResponse.redirect(new URL('/auth/login', request.url))
-  }
+interface Usuario {
+  id: string;
+  nombre?: string;
+  activo?: boolean;
+  [key: string]: any;
 }
 
-// Aplica el middleware a las rutas protegidas
+export default withAuth(
+  async function middleware(req) {
+    const token = req.nextauth.token;
+    if (!token) return NextResponse.redirect(new globalThis.URL('/auth/login', req.url));
+
+    const API_URL = process.env.APP_URL || 'http://localhost:5000';
+    let userData: Usuario | null = null;
+
+    try {
+      const res = await fetch(`${API_URL}/api/usuarios/${token.id}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token.accessToken}`,
+        },
+      });
+
+      if (res.ok) {
+        userData = await res.json();
+      } else {
+        console.error('Error fetching user data:', res.status);
+      }
+    } catch (err) {
+      console.error('Fetch failed:', err);
+    }
+
+    if (userData?.activo === false) {
+      const loginUrl = new globalThis.URL('/auth/login', req.url);
+      return NextResponse.redirect(loginUrl);
+    }
+
+    return NextResponse.next();
+  },
+  {
+    callbacks: {
+      authorized: ({ token }) => !!token,
+    },
+  }
+);
+
 export const config = {
-  matcher: ['/dashboard', '/bodega', '/admin/:path*'],
-}
+  matcher: ['/', '/bodega/:path*', '/admin/:path*', '/dashboards/:path*'],
+};

@@ -292,15 +292,15 @@ export const login_usuario = async (req: Request, res: Response, next: NextFunct
 
         const usuario = resultado.rows[0];
         // Error si el usuario no existe (Unauthorized)
-        if (!usuario) return res.status(401).json({ message: 'credenciales inválidas' });
+        if (!usuario) return res.status(401).json({ message: 'Credenciales inválidas' });
 
         // Comparar la contraseña ingresada con el hash almacenado
         const match = await bcrypt.compare(password, usuario.password);
         // Error si la contraseña no coincide (Unauthorized)
-        if (!match) return res.status(401).json({ message: 'credenciales inválidas' });
+        if (!match) return res.status(401).json({ message: 'Credenciales inválidas' });
 
         if (usuario.activo === false) {
-            return res.status(403).json({ message: 'Usuario inactivo. Contacte al administrador.' });
+            return res.status(403).json({ message: 'Usuario inactivo, contacte al administrador.' });
         }
 
         // Generar el token JWT con los datos clave del usuario

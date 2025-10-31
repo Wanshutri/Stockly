@@ -1,7 +1,11 @@
-import React from "react";
+'use client'
+
+import React, { useState } from "react";
 import StocklyNavbar from "../../components/StocklyNavBar/StocklyNavbar";
 import Link from "next/link";
 import StocklyFooter from "@/app/components/StocklyFooter/StocklyFooter";
+import { signIn } from "next-auth/react";
+import { useRouter } from "next/navigation";
 
 // --- Iconos ---
 const MailIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -56,6 +60,40 @@ const UserLoginIcon = (props: React.SVGProps<SVGSVGElement>) => (
 );
 
 export default function Page() {
+  const router = useRouter()
+  const [error, setError] = useState<string>('')
+  const [isLoading, setIsLoading] = useState(false)
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    setError('')
+    setIsLoading(true)
+
+    const formData = new FormData(e.currentTarget)
+    const email = formData.get('email') as string
+    const password = formData.get('password') as string
+
+    try {
+      const result = await signIn('credentials', {
+        email,
+        password,
+        redirect: false
+      })
+
+      if (result?.error) {
+        setError(result.error);
+        return
+      }
+
+      router.push('/bodega')
+      router.refresh()
+    } catch (error) {
+      setError('Error al iniciar sesión')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   return (
     <div>
       <header>
@@ -80,11 +118,16 @@ export default function Page() {
                   Inicio de Sesión
                 </h2>
                 <p className="mt-3 text-sm text-gray-600">
-                  Que bueno tenerte de vuelta!
+                  ¡Que bueno tenerte de vuelta!
                 </p>
               </div>
 
-              <form className="space-y-6">
+              <form onSubmit={handleSubmit} className="space-y-6">
+                {error && (
+                  <div className="p-3 text-sm text-red-500 bg-red-50 rounded-md border border-red-200">
+                    {error}
+                  </div>
+                )}
 
                 {/* Campo de Correo Electrónico */}
                 <div>
@@ -148,28 +191,23 @@ export default function Page() {
                 </div>
 
                 {/* Botón (CTA) */}
-                <button
-                  type="submit"
-                  className="w-full flex justify-center py-3 px-4
-                           border border-transparent rounded-md shadow-sm
-                           font-semibold text-white bg-blue-600 
-                           hover:bg-blue-700
-                           cursor-pointer
-                           focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
-                           transition-colors duration-200"
-                >
-                  Login
-                </button>
-
-              </form>
+                  <button
+                    type="submit"
+                    disabled={isLoading}
+                    className="w-full flex justify-center py-3 px-4
+                             border border-transparent rounded-md shadow-sm
+                             font-semibold text-white bg-blue-600 
+                             hover:bg-blue-700
+                             disabled:opacity-50 disabled:cursor-not-allowed
+                             cursor-pointer
+                             focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
+                             transition-colors duration-200"
+                  >
+                    {isLoading ? 'Iniciando sesión...' : 'Login'}
+                  </button>              </form>
 
             </div>
           </div>
-
-          {/* LADO DERECHO (IMAGEN): Ocupa toda la columna 
-            'hidden md:block': Oculto en móvil, visible en 'md'
-            Mantenemos `relative` solo si vas a usar Image con layout fill.
-        */}
           <div className="hidden md:block relative">
           </div>
         </div>

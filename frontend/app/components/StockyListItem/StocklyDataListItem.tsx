@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export default function StocklyDataListItem({
     cells,
     selected = false,
@@ -18,9 +20,11 @@ export default function StocklyDataListItem({
                     }`}
             />
             {cells.map((cell, i) => (
-                <div key={i} className="px-4 py-3 text-sm text-gray-800">
-                    {cell}
-                </div>
+                <Link href={`/bodega/${cells[0]}`} key={i}>
+                    <div key={i} className="px-4 py-3 text-sm text-gray-800">
+                        {cell}
+                    </div>
+                </Link>
             ))}
         </div>
     );
