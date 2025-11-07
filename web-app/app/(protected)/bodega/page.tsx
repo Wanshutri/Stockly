@@ -1,13 +1,12 @@
-import BodegaLayout from "@/components/layout/BodegaLayout";
-
-console.log("Bodega page loaded");
+import { productColumns, } from "@/components/hooks/fetchDataTableProductos";
+import BodegaTable from "@/components/ui/BodegaTable";
 
 export default function BodegaPage() {
 
     return (
         <div className="mt-[8rem] min-h-screen md:w-[80%] mx-auto w-[90%]">
             <h1>Gestión de inventario</h1>
-            <BodegaLayout />
+            <BodegaTable apiUrl="api/productos" columnsDef={productColumns}></BodegaTable>
         </div>
     )
 }

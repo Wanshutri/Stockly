@@ -37,15 +37,12 @@ export type TipoDocumentoTributarioType = {
 export type ProductoType = {
   sku: string
   nombre: string
-  id_categoria: number
-  id_marca: number
+  tipo_categoria: string,
+  marca: string
   precio_venta: number
   precio_compra: number
   descripcion: string
   stock: number
-  tipo_categoria?: TipoCategoriaType
-  marca?: MarcaType
-  detalles_compra?: DetalleCompraType[]
 }
 
 export type ClienteType = {
