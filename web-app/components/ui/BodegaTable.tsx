@@ -7,7 +7,7 @@ import { Box, CircularProgress } from "@mui/material";
 
 interface GenericTableProps {
     columnsDef: GridColDef[];
-    apiUrl: string; // 👈 URL de la API (ej: "/api/producto")
+    apiUrl: string;
 }
 
 export default function GenericTable({ columnsDef, apiUrl }: GenericTableProps) {
@@ -15,37 +15,40 @@ export default function GenericTable({ columnsDef, apiUrl }: GenericTableProps) 
     const [loading, setLoading] = useState(true);
     const [selectedRows, setSelectedRows] = useState<any[]>([]);
 
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const res = await fetch(apiUrl);
-                if (!res.ok) throw new Error(`Error al obtener datos desde ${apiUrl}`);
-                const data = await res.json();
-
-                // Detecta si los datos están en un campo (ej: data.productos o data.categorias)
-                const key = Object.keys(data).find((k) => Array.isArray(data[k]));
-                const items = key ? data[key] : Array.isArray(data) ? data : [];
-
-                // Asegura que cada fila tenga un id único
-                const rowsWithId = items.map((item: any, i: number) => ({
-                    id: item.id ?? i + 1,
-                    ...item,
-                }));
-
-                setRows(rowsWithId);
-            } catch (error) {
-                console.error(error);
-            } finally {
-                setLoading(false);
+    const fetchData = async () => {
+        try {
+            const res = await fetch(apiUrl);
+            if (res.status == 404) {
+                setRows([])
+                return
             }
-        };
+            const data = await res.json();
 
+            // Detecta si los datos están en un campo (ej: data.productos o data.categorias)
+            const key = Object.keys(data).find((k) => Array.isArray(data[k]));
+            const items = key ? data[key] : Array.isArray(data) ? data : [];
+
+            // Asegura que cada fila tenga un id único
+            const rowsWithId = items.map((item: any, i: number) => ({
+                id: item.id ?? i + 1,
+                ...item,
+            }));
+
+            setRows(rowsWithId);
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
         fetchData();
     }, [apiUrl]);
 
-    useEffect( () => {
-        console.log(selectedRows)
-    })
+    function handleUpdate() {
+        fetchData()
+    }
 
     if (loading) {
         return (
@@ -58,13 +61,12 @@ export default function GenericTable({ columnsDef, apiUrl }: GenericTableProps) 
     return (
         <div style={{ height: 600, width: "100%" }}>
             <DataGrid
-                rows={rows}
-                columns={columnsDef}
-                checkboxSelection
-                disableRowSelectionOnClick
-                disableColumnMenu
-                slots={{ toolbar: TableToolbar }}
-                onRowSelectionModelChange={(r : any) => {
+                rows={rows} columns={columnsDef} checkboxSelection={true} disableRowSelectionOnClick={true} disableColumnMenu={true}
+                keepNonExistentRowsSelected={true} showToolbar={true} sortingMode="server" filterMode="server"
+                slots={{
+                    toolbar: () => <TableToolbar rowsSelected={selectedRows} handleUpdate={handleUpdate} />
+                }}
+                onRowSelectionModelChange={(r: any) => {
                     const selectedIDs = r.ids
                     const selectedRowData = rows.filter((row) => selectedIDs.has(row.id));
                     setSelectedRows(selectedRowData)
@@ -72,5 +74,4 @@ export default function GenericTable({ columnsDef, apiUrl }: GenericTableProps) 
             />
         </div>
     );
-
 }

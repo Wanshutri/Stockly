@@ -1,16 +1,5 @@
 import { styled } from '@mui/material/styles';
-import {
-    Toolbar,
-    ToolbarButton,
-    ColumnsPanelTrigger,
-    FilterPanelTrigger,
-    ExportCsv,
-    ExportPrint,
-    QuickFilter,
-    QuickFilterControl,
-    QuickFilterClear,
-    QuickFilterTrigger,
-} from '@mui/x-data-grid';
+import { Toolbar, ToolbarButton, ColumnsPanelTrigger, FilterPanelTrigger, ExportCsv, ExportPrint, QuickFilter, QuickFilterControl, QuickFilterClear, QuickFilterTrigger } from '@mui/x-data-grid';
 import Tooltip from '@mui/material/Tooltip';
 import Menu from '@mui/material/Menu';
 import Badge from '@mui/material/Badge';
@@ -23,12 +12,20 @@ import TextField from '@mui/material/TextField';
 import InputAdornment from '@mui/material/InputAdornment';
 import CancelIcon from '@mui/icons-material/Cancel';
 import SearchIcon from '@mui/icons-material/Search';
-import Typography from '@mui/material/Typography';
 import { useRef, useState } from 'react';
+import DeleteIcon from '@mui/icons-material/Delete';
+import OpenPopUp from '../forms/DeleteConfirm';
+import RestartAltIcon from '@mui/icons-material/RestartAlt';
+import BodegaNewItemButton from '../ui/BodegaNewItemButton';
 
 type OwnerState = {
     expanded: boolean;
 };
+
+interface TableToolbarProps {
+    rowsSelected: any[];
+    handleUpdate: () => void;
+}
 
 const StyledQuickFilter = styled(QuickFilter)({
     display: 'grid',
@@ -57,12 +54,28 @@ const StyledTextField = styled(TextField)<{
     transition: theme.transitions.create(['width', 'opacity']),
 }));
 
-export default function TableToolbar() {
+export default function TableToolbar({ rowsSelected, handleUpdate }: TableToolbarProps) {
     const [exportMenuOpen, setExportMenuOpen] = useState(false);
     const exportMenuTriggerRef = useRef<HTMLButtonElement>(null);
 
     return (
         <Toolbar>
+            <div className='mr-auto ml-2'>
+                <BodegaNewItemButton></BodegaNewItemButton>
+            </div>
+            <Tooltip title="Borrar">
+                <ToolbarButton
+                    ref={exportMenuTriggerRef}
+                    id="export-menu-trigger"
+                    aria-controls="export-menu"
+                    aria-haspopup="true"
+                    disabled={rowsSelected.length === 0}
+                    aria-expanded={exportMenuOpen ? 'true' : undefined}
+                    onClick={() => OpenPopUp(rowsSelected, "api/productos", "producto", handleUpdate)}
+                >
+                    <DeleteIcon fontSize='small' color={rowsSelected.length === 0 ? 'disabled' : 'error'}></DeleteIcon>
+                </ToolbarButton>
+            </Tooltip>
             <Tooltip title="Columnas">
                 <ColumnsPanelTrigger render={<ToolbarButton />}>
                     <ViewColumnIcon fontSize="small" />
@@ -80,9 +93,7 @@ export default function TableToolbar() {
                     )}
                 />
             </Tooltip>
-
             <Divider orientation="vertical" variant="middle" flexItem sx={{ mx: 0.5 }} />
-
             <Tooltip title="Exportar">
                 <ToolbarButton
                     ref={exportMenuTriggerRef}
@@ -95,30 +106,26 @@ export default function TableToolbar() {
                     <FileDownloadIcon fontSize="small" />
                 </ToolbarButton>
             </Tooltip>
-
+            <Tooltip title="Actualizar">
+                <ToolbarButton
+                    onClick={() => handleUpdate()}>
+                    <RestartAltIcon fontSize="small" />
+                </ToolbarButton>
+            </Tooltip>
             <Menu
-                id="export-menu"
-                anchorEl={exportMenuTriggerRef.current}
-                open={exportMenuOpen}
-                onClose={() => setExportMenuOpen(false)}
-                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-                transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+                id="export-menu" anchorEl={exportMenuTriggerRef.current} open={exportMenuOpen} onClose={() => setExportMenuOpen(false)}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }} transformOrigin={{ vertical: 'top', horizontal: 'right' }}
                 slotProps={{
                     list: {
                         'aria-labelledby': 'export-menu-trigger',
                     },
-                }}
-            >
+                }}>
                 <ExportPrint render={<MenuItem />} onClick={() => setExportMenuOpen(false)}>
                     Imprimir
                 </ExportPrint>
                 <ExportCsv render={<MenuItem />} onClick={() => setExportMenuOpen(false)}>
                     Descargar CSV
                 </ExportCsv>
-                {/* Available to MUI X Premium users */}
-                {/* <ExportExcel render={<MenuItem />}>
-          Download as Excel
-        </ExportExcel> */}
             </Menu>
             <StyledQuickFilter>
                 <QuickFilterTrigger
@@ -128,22 +135,16 @@ export default function TableToolbar() {
                                 {...triggerProps}
                                 ownerState={{ expanded: state.expanded }}
                                 color="default"
-                                aria-disabled={state.expanded}
-                            >
+                                aria-disabled={state.expanded}>
                                 <SearchIcon fontSize="small" />
                             </StyledToolbarButton>
                         </Tooltip>
-                    )}
-                />
+                    )} />
                 <QuickFilterControl
                     render={({ ref, ...controlProps }, state) => (
                         <StyledTextField
-                            {...controlProps}
-                            ownerState={{ expanded: state.expanded }}
-                            inputRef={ref}
-                            aria-label="Buscar"
-                            placeholder="Buscar..."
-                            size="small"
+                            {...controlProps} ownerState={{ expanded: state.expanded }} inputRef={ref} aria-label="Buscar"
+                            placeholder="Buscar..." size="small"
                             slotProps={{
                                 input: {
                                     startAdornment: (
@@ -166,10 +167,8 @@ export default function TableToolbar() {
                                     ...controlProps.slotProps?.input,
                                 },
                                 ...controlProps.slotProps,
-                            }}
-                        />
-                    )}
-                />
+                            }} />
+                    )} />
             </StyledQuickFilter>
         </Toolbar>
     );
