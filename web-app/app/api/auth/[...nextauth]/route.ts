@@ -42,6 +42,10 @@ const authOptions = {
                         throw new Error('Contraseña incorrecta')
                     }
 
+                    if (!user.activo) {
+                        throw new Error('Cuenta deshabilitada, contacte a su administrador.')
+                    }
+
                     // Si todo está bien, devuelve sólo el id del usuario (guardaremos solo el id en la sesión)
                     return { id: String(user.id_usuario) }
 

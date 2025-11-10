@@ -38,7 +38,13 @@ export default async function proxy(req: NextRequest) {
   // At this point there is an auth cookie: verify active state via internal API
   try {
     const checkUrl = new URL('/api/auth/checkActivo', req.url)
-    const res = await fetch(checkUrl.toString(), { headers: { cookie: cookieHeader } })
+    const res = await fetch(checkUrl.toString(), {
+      headers: {
+        cookie: cookieHeader,
+        'x-pathname': pathname // << enviar la ruta actual
+      }
+    })
+
 
     if (res.status === 200) {
       const data = await res.json()
@@ -51,6 +57,8 @@ export default async function proxy(req: NextRequest) {
         }
         return resp
       }
+
+      if (!data.canAccess) return NextResponse.redirect(new URL('/', req.url))
 
       // active user
       return NextResponse.next()
