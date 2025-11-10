@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import type { ProductoType } from '@/types/db'
 import { z } from 'zod'
 
 /**
@@ -23,7 +22,7 @@ const productoSchema = z.object({
  */
 export async function GET() {
   try {
-    const productosDB = await prisma.producto.findMany({
+    const productos = await prisma.producto.findMany({
       select: {
         sku: true,
         nombre: true,
@@ -31,29 +30,17 @@ export async function GET() {
         precio_compra: true,
         descripcion: true,
         stock: true,
-        marca: { select: { nombre_marca: true } },
-        tipo_categoria: { select: { nombre_categoria: true } }
+        marca: true,
+        tipo_categoria: true
       }
     })
 
-    if (!productosDB || productosDB.length === 0) {
+    if (!productos || productos.length === 0) {
       return NextResponse.json(
         { message: 'No se encontraron productos.' },
         { status: 404 }
       )
     }
-
-    // Convertir los Decimals a number para que coincidan con ProductoType
-    const productos: ProductoType[] = productosDB.map((p) => ({
-      sku: p.sku,
-      nombre: p.nombre,
-      precio_venta: Number(p.precio_venta),
-      precio_compra: Number(p.precio_compra),
-      descripcion: p.descripcion,
-      stock: p.stock,
-      marca: p.marca.nombre_marca,
-      tipo_categoria: p.tipo_categoria.nombre_categoria
-    }))
 
     return NextResponse.json({ productos }, { status: 200 })
   } catch (error) {
@@ -123,32 +110,16 @@ export async function POST(req: Request) {
       data: {
         sku: data.sku,
         nombre: data.nombre,
-        id_categoria: data.id_categoria,
         id_marca: data.id_marca,
         precio_venta: data.precio_venta,
         precio_compra: data.precio_compra,
         descripcion: data.descripcion,
-        stock: data.stock
+        stock: data.stock,
+        id_categoria: data.id_categoria
       },
-      include: {
-        marca: { select: { nombre_marca: true } },
-        tipo_categoria: { select: { nombre_categoria: true } }
-      }
     })
 
-    // Formatear salida
-    const producto: ProductoType = {
-      sku: productoCreado.sku,
-      nombre: productoCreado.nombre,
-      precio_venta: Number(productoCreado.precio_venta),
-      precio_compra: Number(productoCreado.precio_compra),
-      descripcion: productoCreado.descripcion,
-      stock: productoCreado.stock,
-      marca: marca.nombre_marca,
-      tipo_categoria: categoria.nombre_categoria
-    }
-
-    return NextResponse.json({ producto }, { status: 201 })
+    return NextResponse.json({ productoCreado }, { status: 201 })
   } catch (error) {
     console.error('Error en POST /api/productos:', error)
     return NextResponse.json(

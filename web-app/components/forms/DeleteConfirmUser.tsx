@@ -2,14 +2,17 @@ import Swal from 'sweetalert2'
 import Toastify from 'toastify-js'
 import 'toastify-js/src/toastify.css'
 
-async function deleteRows(url: string, rows: any[]) {
+async function deleteRows(url: string, rows: any[], deletionKey: string) {
     try {
         for (const row of rows) {
-            const response = await fetch(`${url}/${row.sku}`, {
+            const idValue = row[deletionKey]
+            if (idValue === undefined) throw new Error(`La fila no tiene la propiedad ${deletionKey}`)
+
+            const response = await fetch(`${url}/${idValue}`, {
                 method: 'DELETE',
             })
 
-            if (!response.ok) throw new Error(`Error al eliminar ${row.sku}`)
+            if (!response.ok) throw new Error(`Error al eliminar ${row.sku ?? idValue}`)
         }
         return true
     } catch (error) {
@@ -22,6 +25,7 @@ export default function OpenPopUp(
     rows: any[],
     url: string,
     name: string,
+    deletionKey: string,
     onSuccess?: () => void
 ) {
     const n = rows.length
@@ -37,10 +41,10 @@ export default function OpenPopUp(
         cancelButtonText: 'Cancelar',
     }).then(async (result) => {
         if (result.isConfirmed) {
-            const success = await deleteRows(url, rows)
+            const success = await deleteRows(url, rows, deletionKey)
 
             if (success) {
-                if (onSuccess) onSuccess() // ✅ se ejecuta antes del toast
+                if (onSuccess) onSuccess()
 
                 Toastify({
                     text: `${n} ${name}${n > 1 ? 's' : ''} eliminado${n > 1 ? 's' : ''} correctamente.`,

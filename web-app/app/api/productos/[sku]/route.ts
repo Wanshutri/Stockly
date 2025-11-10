@@ -30,7 +30,7 @@ export async function GET(_req: Request, context: { params: { sku: string } }) {
       return NextResponse.json({ error: 'SKU inválido. Debe ser alfanumérico y máximo 50 caracteres.' }, { status: 400 })
     }
 
-    const productoDB = await prisma.producto.findUnique({
+    const producto = await prisma.producto.findUnique({
       where: { sku },
       select: {
         sku: true,
@@ -39,26 +39,15 @@ export async function GET(_req: Request, context: { params: { sku: string } }) {
         precio_compra: true,
         descripcion: true,
         stock: true,
-        marca: { select: { nombre_marca: true } },
-        tipo_categoria: { select: { nombre_categoria: true } }
+        marca: true,
+        tipo_categoria: true
       }
     })
 
-    if (!productoDB) {
+    if (!producto) {
       return NextResponse.json({ error: 'Producto no encontrado' }, { status: 404 })
     }
 
-    // Convertir Decimals a number y tipar correctamente
-    const producto: ProductoType = {
-      sku: productoDB.sku,
-      nombre: productoDB.nombre,
-      precio_venta: Number(productoDB.precio_venta),
-      precio_compra: Number(productoDB.precio_compra),
-      descripcion: productoDB.descripcion,
-      stock: productoDB.stock,
-      marca: productoDB.marca.nombre_marca,
-      tipo_categoria: productoDB.tipo_categoria.nombre_categoria
-    }
 
     return NextResponse.json({ producto }, { status: 200 })
   } catch (error) {
@@ -118,8 +107,8 @@ export async function PUT(req: Request, context: { params: { sku: string } }) {
       where: { sku },
       data,
       include: {
-        marca: { select: { nombre_marca: true } },
-        tipo_categoria: { select: { nombre_categoria: true } }
+        marca: true,
+        tipo_categoria: true
       }
     })
 
@@ -130,8 +119,8 @@ export async function PUT(req: Request, context: { params: { sku: string } }) {
       precio_compra: Number(productoActualizado.precio_compra),
       descripcion: productoActualizado.descripcion,
       stock: productoActualizado.stock,
-      marca: productoActualizado.marca.nombre_marca,
-      tipo_categoria: productoActualizado.tipo_categoria.nombre_categoria
+      marca: productoActualizado.marca,
+      tipo_categoria: productoActualizado.tipo_categoria
     }
 
     return NextResponse.json({ producto }, { status: 200 })

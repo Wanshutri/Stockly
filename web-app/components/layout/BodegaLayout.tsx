@@ -1,0 +1,69 @@
+"use client";
+
+import * as React from 'react';
+import Tabs from '@mui/material/Tabs';
+import Tab from '@mui/material/Tab';
+import Box from '@mui/material/Box';
+import BodegaTable from "@/components/ui/BodegaTable";
+import { categoriasColumns, marcaColumns, productColumns, } from "@/components/definitions/DataTableColumns";
+import ProductForm from '../forms/ProductForm';
+import MarcaForm from '../forms/MarcaForm';
+import CategoriaForm from '../forms/CategoriaForm';
+
+interface TabPanelProps {
+    children?: React.ReactNode;
+    index: number;
+    value: number;
+}
+
+function CustomTabPanel(props: TabPanelProps) {
+    const { children, value, index, ...other } = props;
+
+    return (
+        <div
+            role="tabpanel"
+            hidden={value !== index}
+            id={`simple-tabpanel-${index}`}
+            aria-labelledby={`simple-tab-${index}`}
+            {...other}
+        >
+            {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
+        </div>
+    );
+}
+
+function a11yProps(index: number) {
+    return {
+        id: `simple-tab-${index}`,
+        'aria-controls': `simple-tabpanel-${index}`,
+    };
+}
+
+export default function BodegaLayout() {
+    const [value, setValue] = React.useState(0);
+
+    const handleChange = (event: React.SyntheticEvent, newValue: number) => {
+        setValue(newValue);
+    };
+
+    return (
+        <Box sx={{ width: '100%' }}>
+            <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+                <Tabs value={value} onChange={handleChange} aria-label="basic tabs example">
+                    <Tab label="Productos" {...a11yProps(0)} />
+                    <Tab label="Marcas" {...a11yProps(1)} />
+                    <Tab label="Categorias" {...a11yProps(2)} />
+                </Tabs>
+            </Box>
+            <CustomTabPanel value={value} index={0}>
+                <BodegaTable formulario={<ProductForm></ProductForm>} apiUrl="api/productos" deletionKey='sku' title='Producto' columnsDef={productColumns}></BodegaTable>
+            </CustomTabPanel>
+            <CustomTabPanel value={value} index={1}>
+                <BodegaTable formulario={<MarcaForm></MarcaForm>} apiUrl="api/marcas" deletionKey='id_marca' title='Marca' columnsDef={marcaColumns}></BodegaTable>
+            </CustomTabPanel>
+            <CustomTabPanel value={value} index={2}>
+                <BodegaTable formulario={<CategoriaForm></CategoriaForm>} apiUrl="api/categorias" deletionKey='id_categoria' title='Categoria' columnsDef={categoriasColumns}></BodegaTable>
+            </CustomTabPanel>
+        </Box>
+    );
+}

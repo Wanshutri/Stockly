@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useForm, Controller, SubmitHandler } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { ProductoType } from "@/types/db";
 
 // ---------- Conversión segura a número ----------
 const toNumber = (val: unknown) => {
@@ -25,7 +26,7 @@ const numericField = (label: string, positive = false) =>
         });
 
 // ---------- Esquema de validación ----------
-const productoSchema = z.object({
+const itemSchema = z.object({
     sku: z.string().trim().min(1, "El SKU es obligatorio"),
     nombre: z.string().trim().min(1, "El nombre es obligatorio"),
     descripcion: z.string().trim().min(1, "La descripción es obligatoria"),
@@ -40,33 +41,41 @@ const productoSchema = z.object({
         .refine((v) => v !== null, { message: "La marca es obligatoria" }),
 });
 
-type ProductoForm = z.infer<typeof productoSchema>;
+type ItemForm = z.infer<typeof itemSchema>;
 
-export default function ProductForm() {
+export default function ProductoForm({ item }: { item?: ProductoType }) {
     const [categorias, setCategorias] = useState<any[]>([]);
     const [marcas, setMarcas] = useState<any[]>([]);
     const [serverError, setServerError] = useState<string | null>(null);
 
-    const { control, handleSubmit, formState: { errors }, reset } = useForm<ProductoForm>({
-        resolver: zodResolver(productoSchema),
+    const { control, handleSubmit, formState: { errors }, reset } = useForm<ItemForm>({
+        resolver: zodResolver(itemSchema),
         defaultValues: {
-            sku: "",
-            nombre: "",
-            descripcion: "",
-            precioVenta: "",
-            precioCompra: "",
-            stock: "",
-            categoria: null,
-            marca: null,
+            sku: item?.producto?.sku || "",
+            nombre: item?.producto?.nombre || "",
+            descripcion: item?.producto?.descripcion || "",
+            precioVenta: item?.producto?.precio_venta || "",
+            precioCompra: item?.producto?.precio_compra || "",
+            stock: item?.producto?.stock || "",
+            categoria: item?.producto?.tipo_categoria
+                ? {
+                    id: item.producto.tipo_categoria.id_categoria,
+                    label: item.producto.tipo_categoria.nombre_categoria,
+                }
+                : null,
+            marca: item?.producto?.marca
+                ? { id: item.producto.marca.id_marca, label: item.producto.marca.nombre_marca }
+                : null,
         },
+
     });
 
     // ---------- Envío del formulario ----------
-    const onSubmit: SubmitHandler<ProductoForm> = async (data) => {
+    const onSubmit: SubmitHandler<ItemForm> = async (data) => {
         setServerError(null); // limpiar errores anteriores
         try {
-            const res = await fetch("/api/productos", {
-                method: "POST",
+            const res = await fetch(`/api/productos${item ? "/" + item.sku : ""}`, {
+                method: item ? "PUT" : "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     sku: data.sku,
@@ -85,10 +94,7 @@ export default function ProductForm() {
                 setServerError(err.error || "Error al crear el producto. Intenta nuevamente.");
                 return;
             }
-
-            const producto = await res.json();
-            console.log("Producto creado:", producto);
-            alert("Producto creado correctamente");
+            window.location.reload();
             reset();
         } catch (error) {
             console.error("Error en la solicitud:", error);
@@ -96,22 +102,55 @@ export default function ProductForm() {
         }
     };
 
-    // ---------- Cargar categorías y marcas ----------
+
+
     useEffect(() => {
-        (async () => {
+        const fetchData = async () => {
             try {
+                // Traer categorías y marcas
                 const [catRes, marRes] = await Promise.all([
-                    fetch("/api/categorias").then((r) => r.json()),
-                    fetch("/api/marcas").then((r) => r.json()),
+                    fetch("/api/categorias").then(r => r.json()),
+                    fetch("/api/marcas").then(r => r.json()),
                 ]);
                 setCategorias(catRes.categorias || []);
                 setMarcas(marRes.marcas || []);
-            } catch {
+
+                // Si item existe, traer sus datos actualizados
+                if (item) {
+                    const res = await fetch(`/api/productos/${item.sku}`);
+                    if (!res.ok) throw new Error("Error al obtener el producto");
+                    const data: ProductoType = await res.json();
+
+                    // Setear los valores del formulario con reset
+                    reset({
+                        sku: data.producto.sku,
+                        nombre: data.producto.nombre,
+                        descripcion: data.producto.descripcion,
+                        precioVenta: data.producto.precio_venta,
+                        precioCompra: data.producto.precio_compra,
+                        stock: data.producto.stock,
+                        categoria: data.producto.tipo_categoria
+                            ? {
+                                id: data.producto.tipo_categoria.id_categoria,
+                                label: data.producto.tipo_categoria.nombre_categoria,
+                            }
+                            : null,
+                        marca: data.producto.marca
+                            ? { id: data.producto.marca.id_marca, label: data.producto.marca.nombre_marca }
+                            : null,
+                    });
+
+                }
+            } catch (error) {
+                console.error(error);
                 setCategorias([]);
                 setMarcas([]);
             }
-        })();
-    }, []);
+        };
+
+        fetchData();
+    }, [item, reset]);
+
 
     // ---------- Render ----------
     return (
@@ -131,6 +170,7 @@ export default function ProductForm() {
                             error={!!errors.sku}
                             helperText={errors.sku?.message}
                             fullWidth
+                            disabled={item ? true : false}
                         />
                     )}
                 />
@@ -281,7 +321,7 @@ export default function ProductForm() {
                 {/* Botón */}
                 <div className="flex flex-col items-center pt-3">
                     <Button type="submit" variant="contained">
-                        Crear Producto
+                        {item ? "Actualizar Producto" : "Crear Producto"}
                     </Button>
 
                     {/* Error externo */}

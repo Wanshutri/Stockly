@@ -22,18 +22,12 @@ function validateCategoriaInput(nombre_categoria: string | undefined): string[] 
 }
 
 // GET /api/categoria/[id] - Obtener una categoría por ID
-export async function GET(_req: Request, { params }: Params) {
+export async function GET(req: Request, context: { params: { id: string } }) {
     try {
-        const id = parseInt(params.id)
-        if (isNaN(id) || id < 1) {
-            return NextResponse.json({
-                error: 'Error de validación',
-                message: 'El ID debe ser un número entero positivo'
-            }, { status: 400 })
-        }
+        const { id } = await context.params
 
         const categoria = await prisma.tipoCategoria.findUnique({
-            where: { id_categoria: id },
+            where: { id_categoria: parseInt(id) },
             select: {
                 id_categoria: true,
                 nombre_categoria: true
@@ -62,19 +56,14 @@ export async function GET(_req: Request, { params }: Params) {
 }
 
 // PUT /api/categoria/[id] - Actualizar una categoría
-export async function PUT(req: Request, { params }: Params) {
+export async function PUT(req: Request, context: { params: { id: string } }) {
     try {
-        const id = parseInt(params.id)
-        if (isNaN(id) || id < 1) {
-            return NextResponse.json({
-                error: 'Error de validación',
-                message: 'El ID debe ser un número entero positivo'
-            }, { status: 400 })
-        }
+
+        const { id } = await context.params
 
         // Verificar si la categoría existe
         const existingCategoria = await prisma.tipoCategoria.findUnique({
-            where: { id_categoria: id }
+            where: { id_categoria: parseInt(id) }
         })
 
         if (!existingCategoria) {
@@ -103,7 +92,7 @@ export async function PUT(req: Request, { params }: Params) {
                     mode: 'insensitive'
                 },
                 NOT: {
-                    id_categoria: id
+                    id_categoria: parseInt(id)
                 }
             }
         })
@@ -116,7 +105,7 @@ export async function PUT(req: Request, { params }: Params) {
         }
 
         const categoria = await prisma.tipoCategoria.update({
-            where: { id_categoria: id },
+            where: { id_categoria: parseInt(id) },
             data: { nombre_categoria: body.nombre_categoria.trim() },
             include: {
                 _count: {
@@ -158,19 +147,13 @@ export async function PUT(req: Request, { params }: Params) {
 }
 
 // DELETE /api/categoria/[id] - Eliminar una categoría
-export async function DELETE(_req: Request, { params }: Params) {
+export async function DELETE(req: Request, context: { params: { id: string } }) {
     try {
-        const id = parseInt(params.id)
-        if (isNaN(id) || id < 1) {
-            return NextResponse.json({
-                error: 'Error de validación',
-                message: 'El ID debe ser un número entero positivo'
-            }, { status: 400 })
-        }
-
+        
+        const { id } = await context.params
         // Verificar si la categoría existe y obtener productos asociados
         const categoria = await prisma.tipoCategoria.findUnique({
-            where: { id_categoria: id },
+            where: { id_categoria: parseInt(id) },
             include: {
                 _count: {
                     select: { productos: true }
@@ -196,7 +179,7 @@ export async function DELETE(_req: Request, { params }: Params) {
 
         // Eliminar la categoría
         await prisma.tipoCategoria.delete({
-            where: { id_categoria: id }
+            where: { id_categoria: parseInt(id) }
         })
 
         return NextResponse.json({

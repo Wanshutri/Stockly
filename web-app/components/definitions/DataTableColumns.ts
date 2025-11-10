@@ -11,3 +11,13 @@ export const productColumns: GridColDef[] = [
     { field: "stock", headerName: "Stock", type: "number", width: 100 },
     { field: "descripcion", headerName: "Descripción", flex: 1, minWidth: 200 },
 ];
+
+export const marcaColumns: GridColDef[] = [
+    { field: "id", headerName: "ID de marca", width: 120, },
+    { field: "nombre_marca", headerName: "Nombre", flex: 1, minWidth: 150 },
+];
+
+export const categoriasColumns: GridColDef[] = [
+    { field: "id_categoria", headerName: "ID de Categoria", width: 120, },
+    { field: "nombre_categoria", headerName: "Nombre Categoria", flex: 1, minWidth: 150 },
+];

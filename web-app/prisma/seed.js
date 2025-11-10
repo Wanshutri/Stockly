@@ -132,7 +132,7 @@ async function main() {
     const password = 'admin123'; // Contraseña por defecto
 
     // Hashear con bcrypt
-    
+
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const adminUser = await prisma.usuario.upsert({
