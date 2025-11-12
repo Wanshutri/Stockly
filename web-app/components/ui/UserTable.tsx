@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
 import IconButton from '@mui/material/IconButton';
 import Tooltip from '@mui/material/Tooltip';
 import Button from '@mui/material/Button';
@@ -10,7 +9,6 @@ import Alert from '@mui/material/Alert';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import NewUserModal from '../../../web-app/components/forms/NewUserForm';
 import EditUserModal from '../../../web-app/components/forms/EditUserForm';
 import DeleteUserModal from '../../../web-app/components/ui/DeleteUser';
@@ -55,12 +53,12 @@ export default function AdminDashboard() {
         }
     };
 
-    // Cargar usuarios al montar el componente
+    // Cargar usuarios al montar el componente //
     useEffect(() => {
         fetchUsers();
     }, []);
 
-    // --- HANDLERS CRUD LOCALES (Actualizan la tabla tras éxito en modales) ---
+    // --- HANDLERS CRUD LOCALES --- //
 
     const handleCreate = (newUser: User) => {
         setUsers([...users, newUser]);
@@ -82,11 +80,8 @@ export default function AdminDashboard() {
 
     return (
         <div className="w-full mt-[5rem] mb-20 px-5 md:px-0">
-            <div className="md:w-[80%] mx-auto w-full">
+            <div className="md:w-[80%] mt-26 mx-auto w-full">
                 <div className="mb-8">
-                    <Link href="/admin" className="text-gray-500 hover:text-blue-600 flex items-center gap-1 text-sm mb-4 w-fit">
-                        <ArrowBackIcon fontSize="small" /> Volver al Panel
-                    </Link>
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                         <div>
                             <h1 className="text-3xl font-bold text-gray-800">Gestión de Usuarios</h1>
@@ -135,7 +130,6 @@ export default function AdminDashboard() {
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                                     <Tooltip title="Editar"><IconButton onClick={() => setEditingUser(user)} color="primary" size="small" sx={{ mr: 1, bgcolor: '#eff6ff' }}><EditIcon fontSize="small" /></IconButton></Tooltip>
-                                                    {/* Falta implementar el modal de eliminar real, por ahora solo botón */}
                                                     <Tooltip title="Eliminar"><IconButton onClick={() => setDeletingUser(user)} color="error" size="small" sx={{ bgcolor: '#fef2f2' }}><DeleteIcon fontSize="small" /></IconButton></Tooltip>
                                                 </td>
                                             </tr>

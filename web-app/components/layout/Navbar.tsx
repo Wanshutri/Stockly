@@ -39,6 +39,7 @@ function getNavItems(idRol?: number): NavItem[] {
     1: [ //Admin
       { link: "bodega", name: "Bodega" },
       { link: "ventas", name: "Ventas" },
+      { link: "dashboard", name: "Dashboard" },
       { link: "admin", name: "Administración" },
     ],
     2: [{ link: "ventas", name: "Ventas" }], //Vendedor

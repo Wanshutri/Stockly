@@ -1,9 +1,6 @@
-// Este es tu archivo de esquema de Prisma.
-// Define tu datasource (PostgreSQL) y el generador de cliente.
-
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL") // Asegúrate de tener esta variable en tu .env
+  url      = env("DATABASE_URL")
 }
 
 generator client {
@@ -37,7 +34,7 @@ model TipoUsuario {
 
 model TipoDocumentoTributario {
   codigo_sii String                 @id @db.VarChar(3)
-  nombre_tipo String                 @db.VarChar(100)
+  nombre_tipo String               @db.VarChar(100)
   documentos  DocumentoTributario[] // Relación inversa: un tipo de documento tiene muchos documentos
 }
 
@@ -57,16 +54,6 @@ model Producto {
   detalles_compra DetalleCompra[] // Relación inversa: un producto está en muchos detalles de compra
 }
 
-model Cliente {
-  id_cliente      Int       @id @default(autoincrement())
-  rut             String?   @unique @db.VarChar(12)
-  nombre_completo String?   @db.VarChar(150)
-  telefono        String?   @db.VarChar(20)
-  correo          String?   @db.VarChar(100)
-  es_anonimo      Boolean   @default(false)
-  compras         Compra[] // Relación inversa: un cliente tiene muchas compras
-}
-
 model Usuario {
   id_usuario   Int         @id @default(autoincrement())
   nombre       String      @db.VarChar(100)
@@ -76,6 +63,8 @@ model Usuario {
   id_tipo      Int
   tipo_usuario TipoUsuario @relation(fields: [id_tipo], references: [id_tipo])
 }
+
+// --- Pagos y Compras ---
 
 model Pago {
   id_pago         Int     @id @default(autoincrement())
@@ -88,12 +77,10 @@ model Compra {
   id_compra             Int                    @id @default(autoincrement())
   fecha                 DateTime               @db.Date
   total                 Decimal                @db.Decimal(10, 2)
-  id_cliente            Int
   id_pago               Int                    @unique // Clave foránea 1-a-1 para Pago
-  cliente               Cliente                @relation(fields: [id_cliente], references: [id_cliente])
   pago                  Pago                   @relation(fields: [id_pago], references: [id_pago])
   detalles_compra       DetalleCompra[]        // Relación 1-a-N con DetalleCompra
-  documento_tributario DocumentoTributario? // Relación inversa 1-a-1 con DocumentoTributario
+  documento_tributario DocumentoTributario?    // Relación inversa 1-a-1 con DocumentoTributario
 }
 
 // --- Tablas de unión / Detalles ---

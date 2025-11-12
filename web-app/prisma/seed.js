@@ -114,19 +114,6 @@ async function main() {
     });
     console.log(`Creados ${marcas.count} Marcas.`);
 
-    // 5. Cliente Anónimo
-    // Usamos upsert para garantizar que solo exista una vez y mantener la consistencia del ID
-    const clienteAnonimo = await prisma.cliente.upsert({
-        where: { rut: '99999999-9' },
-        update: {}, // No actualiza nada si existe
-        create: {
-            rut: '99999999-9',
-            nombre_completo: 'Cliente Anónimo',
-            es_anonimo: true,
-        },
-    });
-    console.log(`Cliente anónimo verificado/creado con ID: ${clienteAnonimo.id_cliente}`);
-
     // 6. Usuario Administrador
 
     const password = 'admin123'; // Contraseña por defecto

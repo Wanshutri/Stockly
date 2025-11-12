@@ -22,7 +22,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           <main>
             {children}
           </main>
-          <Footer />
+          
         </NextAuthProvider>
       </body>
     </html>
