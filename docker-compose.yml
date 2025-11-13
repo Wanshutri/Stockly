@@ -17,25 +17,26 @@ services:
     networks:
       - app-network
 
-  webapp:
-    build: ./web-app
-    restart: always
-    env_file:
-      - .env
-    depends_on:
-      - db
-    environment:
-      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
-      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/stockly
-      DB_HOST: db
-      DB_PORT: 5432
-      DB_NAME: stockly
-      DB_USER: ${POSTGRES_USER}
-      DB_PASS: ${POSTGRES_PASSWORD}
-    ports:
-      - "80:80"
-    networks:
-      - app-network
+  #prod
+  # webapp:
+  #   build: ./web-app
+  #   restart: always
+  #   env_file:
+  #     - .env
+  #   depends_on:
+  #     - db
+  #   environment:
+  #     NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
+  #     DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/stockly
+  #     DB_HOST: db
+  #     DB_PORT: 5432
+  #     DB_NAME: stockly
+  #     DB_USER: ${POSTGRES_USER}
+  #     DB_PASS: ${POSTGRES_PASSWORD}
+  #   ports:
+  #     - "80:80"
+  #   networks:
+  #     - app-network
 
 volumes:
   db-data:
