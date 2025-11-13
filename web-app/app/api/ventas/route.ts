@@ -9,8 +9,7 @@ import { z } from "zod";
 // --- Esquemas Zod ---
 const detalleSchema = z.object({
   sku: z.string().min(1, "El SKU es obligatorio"),
-  cantidad: z.number().int().positive("La cantidad debe ser mayor que 0"),
-  subtotal: z.number().positive("El subtotal debe ser mayor que 0"),
+  cantidad: z.number().int().positive("La cantidad debe ser mayor que 0")
 });
 
 const pagoSchema = z.object({
@@ -20,7 +19,6 @@ const pagoSchema = z.object({
 
 const ventaSchema = z.object({
   fecha: z.string().optional(),
-  total: z.number().positive("El total debe ser mayor que 0"),
   pago: pagoSchema,
   detalles: z
     .array(detalleSchema)
@@ -83,18 +81,46 @@ export async function POST(req: Request) {
 
     const data = validacion.data;
 
-    const result = await prisma.$transaction(async (tx) => {
-      // Crear el pago
-      const pago = await tx.pago.create({ data: data.pago });
+    // Calcular subtotales obteniendo los precios desde la BD
+    const detallesConSubtotal = await Promise.all(
+      data.detalles.map(async (d) => {
+        const producto = await prisma.producto.findUnique({
+          where: { sku: d.sku },
+          select: { precio_compra: true },
+        });
 
-      // Crear la compra con detalles y documento opcional
+        if (!producto) {
+          throw new Error(`Producto con SKU "${d.sku}" no encontrado`);
+        }
+
+        const subtotal = producto.precio_compra * d.cantidad;
+
+        return {
+          sku: d.sku,
+          cantidad: d.cantidad,
+          subtotal,
+        };
+      })
+    );
+
+    // Calcular el total de la compra
+    const totalCalculado = detallesConSubtotal.reduce(
+      (acc, d) => acc + d.subtotal,
+      0
+    );
+
+    // Ejecutar transacción
+    const result = await prisma.$transaction(async (tx) => {
+      const pago = await tx.pago.create({ data: data.pago || {} });
+
       const compra = await tx.compra.create({
         data: {
           fecha: data.fecha ? new Date(data.fecha) : new Date(),
-          total: data.total,
+          total: totalCalculado,
+          id_cliente: data.id_cliente,
           id_pago: pago.id_pago,
           detalles_compra: {
-            create: data.detalles.map((d) => ({
+            create: detallesConSubtotal.map((d) => ({
               sku: d.sku,
               cantidad: d.cantidad,
               subtotal: d.subtotal,
@@ -115,8 +141,16 @@ export async function POST(req: Request) {
     });
 
     return NextResponse.json({ venta: result }, { status: 201 });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error en POST /api/ventas:", error);
+
+    if (error.message?.includes("no encontrado")) {
+      return NextResponse.json(
+        { error: error.message },
+        { status: 404 }
+      );
+    }
+
     return NextResponse.json(
       { error: "Error interno del servidor" },
       { status: 500 }
