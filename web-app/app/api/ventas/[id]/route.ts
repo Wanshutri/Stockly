@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
@@ -35,9 +35,13 @@ const ventaUpdateSchema = ventaSchema.partial();
  * GET /api/ventas/[id]
  * Obtiene una venta por su ID.
  */
-export async function GET(_req: Request, context: { params: { id: string } }) {
+export async function GET(
+  _req: NextRequest,
+  context: { params: { id: string } | Promise<{ id: string }> }
+) {
   try {
-    const { id } = await context.params
+    const params = await context.params
+    const { id } = params
 
     const venta = await prisma.compra.findUnique({
       where: { id_compra: parseInt(id) },
@@ -69,10 +73,13 @@ export async function GET(_req: Request, context: { params: { id: string } }) {
  * PUT /api/ventas/[id]
  * Actualiza una venta existente.
  */
-export async function PUT(req: Request, context: { params: { id: string } }) {
+export async function PUT(
+  req: NextRequest,
+  context: { params: { id: string } | Promise<{ id: string }> }
+) {
   try {
-    const { id } = await context.params
-
+    const params = await context.params
+    const { id } = params
 
     const body = await req.json();
     const validacion = ventaUpdateSchema.safeParse(body);
@@ -173,9 +180,13 @@ export async function PUT(req: Request, context: { params: { id: string } }) {
  * DELETE /api/ventas/[id]
  * Elimina una venta con sus registros asociados.
  */
-export async function DELETE(req: Request, context: { params: { id: string } }) {
+export async function DELETE(
+  _req: NextRequest,
+  context: { params: { id: string } | Promise<{ id: string }> }
+) {
   try {
-    const { id } = await context.params
+    const params = await context.params
+    const { id } = params
 
     const venta = await prisma.compra.findUnique({ where: { id_compra: parseInt(id) } });
     if (!venta) {

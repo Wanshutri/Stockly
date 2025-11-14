@@ -1,13 +1,9 @@
 "use client"
-
-import { useSession } from 'next-auth/react';
 import useUser from '../hooks/useUser';
 
 export default function HomeStart() {
 
-    const { data: session } = useSession();
-    const userId = (session?.user as any)?.id ?? null
-    const { user, loading, error, reload } = useUser(userId);
+    const { user, loading, error, reload } = useUser();
 
     return (
         <div className="mt-30">

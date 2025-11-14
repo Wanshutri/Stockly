@@ -1,84 +1,84 @@
-import NextAuth from 'next-auth/next'
-import CredentialsProvider from 'next-auth/providers/credentials'
-import { PrismaAdapter } from '@next-auth/prisma-adapter'
-import { prisma } from '@/lib/prisma'
-import bcrypt from 'bcrypt'
-import { UsuarioType } from '@/types/db'
-import { PrismaClient } from '@prisma/client/extension'
+import NextAuth from "next-auth";
+import { NextAuthOptions } from "next-auth";
+import CredentialsProvider from "next-auth/providers/credentials";
 
-const authOptions = {
-    adapter: PrismaAdapter(prisma),
+
+type BackendUser = {
+    id: string;
+    email: string;
+    name?: string;
+    role?: string;
+    token?: string;
+};
+
+
+export const authOptions: NextAuthOptions = {
+    session: {
+        strategy: "jwt",
+    },
     providers: [
         CredentialsProvider({
-            name: 'Credentials',
+            name: "Credentials",
             credentials: {
-                email: { label: 'Email', type: 'text' },
-                password: { label: 'Password', type: 'password' },
+                email: { label: "Email", type: "text" },
+                password: { label: "Password", type: "password" },
             },
-            async authorize(
-                credentials: Record<'email' | 'password', string> | undefined,
-                req: any
-            ) {
-                try {
-                    // Validaciones básicas de entrada
-                    if (!credentials?.email || !credentials?.password) {
-                        throw new Error('Debes ingresar tu correo y contraseña')
-                    }
+            async authorize(credentials) {
+                if (!credentials) return null;
+                const { email, password } = credentials as {
+                    email: string;
+                    password: string;
+                };
 
-                    const user: UsuarioType = await (prisma as PrismaClient).usuario.findUnique({
-                        where: { email: credentials.email },
-                    })
 
-                    if (!user) {
-                        throw new Error('El usuario no existe')
-                    }
+                const res = await fetch(`${process.env.NEXTAUTH_URL}/api/auth/login`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ email, password }),
+                });
 
-                    if (!user.password) {
-                        throw new Error('Cuenta inválida (sin contraseña)')
-                    }
-                    const valid = await bcrypt.compare(credentials.password, user.password)
-                    
-                    if (!valid) {
-                        throw new Error('Contraseña incorrecta')
-                    }
 
-                    if (!user.activo) {
-                        throw new Error('Cuenta deshabilitada, contacte a su administrador.')
-                    }
+                if (!res.ok) return null;
 
-                    // Si todo está bien, devuelve sólo el id del usuario (guardaremos solo el id en la sesión)
-                    return { id: String(user.id_usuario) }
 
-                } catch (err: any) {
-                    // Si hay error, lo lanzamos para que NextAuth lo capture y lo muestre
-                    throw new Error(err.message || 'Error al iniciar sesión')
-                }
+                const user = (await res.json()) as BackendUser;
+
+
+                // debes adaptar la estructura devuelta por tu backend
+                return {
+                    id: user.id,
+                    name: user.name ?? user.email,
+                    email: user.email,
+                    role: user.role,
+                    token: user.token,
+                };
             },
         }),
     ],
-    session: { strategy: 'jwt' },
-    pages: { signIn: '/login' },
-
     callbacks: {
-    async jwt({ token, user }: any) {
+        async jwt({ token, user }) {
+            // cuando hay user (login inicial) añadimos datos al token
             if (user) {
-                return {
-                    ...token,
-                    id: (user as any).id
-                }
+                const u = user as BackendUser & { token?: string };
+                if (u.id) token.sub = u.id;
+                if (u.role) (token as any).role = u.role;
+                if (u.token) (token as any).accessToken = u.token;
             }
-            return token
+            return token;
         },
-    async session({ session, token }: any) {
-            if (session.user) {
-                session.user = { id: token.id as string }
-            }
-            return session
+        async session({ session, token }) {
+            // enriquecemos la sesión con datos del token
+            (session.user as any).id = token.sub;
+            (session.user as any).role = (token as any).role;
+            (session as any).accessToken = (token as any).accessToken;
+            return session;
         },
     },
-}
+    pages: {
+        signIn: "/login",
+    },
+};
 
-const handler = NextAuth(authOptions as any)
 
-export { authOptions }
-export { handler as GET, handler as POST }
+const handler = NextAuth(authOptions);
+export { handler as GET, handler as POST };

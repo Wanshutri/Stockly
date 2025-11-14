@@ -1,6 +1,6 @@
 "use client";
 
-import { Autocomplete, Button, TextField, Typography } from "@mui/material";
+import { Autocomplete, Button, TextField } from "@mui/material";
 import { useEffect, useState } from "react";
 import { useForm, Controller, SubmitHandler } from "react-hook-form";
 import { z } from "zod";
@@ -48,27 +48,22 @@ export default function ProductoForm({ item }: { item?: ProductoType }) {
     const [marcas, setMarcas] = useState<any[]>([]);
     const [serverError, setServerError] = useState<string | null>(null);
 
-    const { control, handleSubmit, formState: { errors }, reset } = useForm<ItemForm>({
+    const { control, handleSubmit, formState: { errors }, reset } = useForm({
         resolver: zodResolver(itemSchema),
         defaultValues: {
-            sku: item?.producto?.sku || "",
-            nombre: item?.producto?.nombre || "",
-            descripcion: item?.producto?.descripcion || "",
-            precioVenta: item?.producto?.precio_venta || "",
-            precioCompra: item?.producto?.precio_compra || "",
-            stock: item?.producto?.stock || "",
-            categoria: item?.producto?.tipo_categoria
-                ? {
-                    id: item.producto.tipo_categoria.id_categoria,
-                    label: item.producto.tipo_categoria.nombre_categoria,
-                }
+            sku: item?.sku || "",
+            nombre: item?.nombre || "",
+            descripcion: item?.descripcion || "",
+            precioVenta: (item?.precio_venta ?? 0) as number,
+            precioCompra: (item?.precio_compra ?? 0) as number,
+            stock: (item?.stock ?? 0) as number,
+            categoria: item?.tipo_categoria
+                ? { id: item.tipo_categoria.id_categoria, label: item.tipo_categoria.nombre_categoria }
                 : null,
-            marca: item?.producto?.marca
-                ? { id: item.producto.marca.id_marca, label: item.producto.marca.nombre_marca }
-                : null,
+            marca: item?.tipo_marca ? { id: item.tipo_marca.id_marca, label: item.tipo_marca.nombre_marca } : null,
         },
-
     });
+
 
     // ---------- Envío del formulario ----------
     const onSubmit: SubmitHandler<ItemForm> = async (data) => {
@@ -123,20 +118,20 @@ export default function ProductoForm({ item }: { item?: ProductoType }) {
 
                     // Setear los valores del formulario con reset
                     reset({
-                        sku: data.producto.sku,
-                        nombre: data.producto.nombre,
-                        descripcion: data.producto.descripcion,
-                        precioVenta: data.producto.precio_venta,
-                        precioCompra: data.producto.precio_compra,
-                        stock: data.producto.stock,
-                        categoria: data.producto.tipo_categoria
+                        sku: data.sku,
+                        nombre: data.nombre,
+                        descripcion: data.descripcion,
+                        precioVenta: data.precio_venta,
+                        precioCompra: data.precio_compra,
+                        stock: data.stock,
+                        categoria: data.tipo_categoria
                             ? {
-                                id: data.producto.tipo_categoria.id_categoria,
-                                label: data.producto.tipo_categoria.nombre_categoria,
+                                id: data.tipo_categoria.id_categoria,
+                                label: data.tipo_categoria.nombre_categoria,
                             }
                             : null,
-                        marca: data.producto.marca
-                            ? { id: data.producto.marca.id_marca, label: data.producto.marca.nombre_marca }
+                        marca: data.tipo_marca
+                            ? { id: data.tipo_marca.id_marca, label: data.tipo_marca.nombre_marca }
                             : null,
                     });
 
@@ -254,50 +249,68 @@ export default function ProductoForm({ item }: { item?: ProductoType }) {
                     <Controller
                         name="categoria"
                         control={control}
-                        render={({ field }) => (
-                            <Autocomplete
-                                disablePortal
-                                options={categorias.map((c) => ({
-                                    label: c.nombre_categoria,
-                                    id: c.id_categoria,
-                                }))}
-                                value={field.value}
-                                onChange={(_, val) => field.onChange(val)}
-                                renderInput={(params) => (
-                                    <TextField
-                                        {...params}
-                                        label="Categoría"
-                                        error={!!errors.categoria}
-                                        helperText={errors.categoria?.message}
-                                    />
-                                )}
-                            />
-                        )}
+                        render={({ field }) => {
+                            const options = categorias.map(c => ({
+                                label: c.nombre_categoria,
+                                id: c.id_categoria,
+                            }));
+
+                            const selectedOption = options.find(o => o.id === field.value?.id) || null;
+
+                            return (
+                                <Autocomplete
+                                    disablePortal
+                                    options={options}
+                                    value={selectedOption}
+                                    onChange={(_, val) => field.onChange(val)}
+                                    isOptionEqualToValue={(opt, val) => opt.id === val.id}
+                                    getOptionLabel={(opt) => opt.label}
+                                    renderInput={(params) => (
+                                        <TextField
+                                            {...params}
+                                            label="Categoría"
+                                            error={!!errors.categoria}
+                                            helperText={errors.categoria?.message}
+                                        />
+                                    )}
+                                />
+                            );
+                        }}
                     />
+
 
                     <Controller
                         name="marca"
                         control={control}
-                        render={({ field }) => (
-                            <Autocomplete
-                                disablePortal
-                                options={marcas.map((m) => ({
-                                    label: m.nombre_marca,
-                                    id: m.id_marca,
-                                }))}
-                                value={field.value}
-                                onChange={(_, val) => field.onChange(val)}
-                                renderInput={(params) => (
-                                    <TextField
-                                        {...params}
-                                        label="Marca"
-                                        error={!!errors.marca}
-                                        helperText={errors.marca?.message}
-                                    />
-                                )}
-                            />
-                        )}
+                        render={({ field }) => {
+                            const options = marcas.map(m => ({
+                                label: m.nombre_marca,
+                                id: m.id_marca,
+                            }));
+
+                            const selectedOption = options.find(o => o.id === field.value?.id) || null;
+
+                            return (
+                                <Autocomplete
+                                    disablePortal
+                                    options={options}
+                                    value={selectedOption}
+                                    onChange={(_, val) => field.onChange(val)}
+                                    isOptionEqualToValue={(opt, val) => opt.id === val.id}
+                                    getOptionLabel={(opt) => opt.label}
+                                    renderInput={(params) => (
+                                        <TextField
+                                            {...params}
+                                            label="Marca"
+                                            error={!!errors.marca}
+                                            helperText={errors.marca?.message}
+                                        />
+                                    )}
+                                />
+                            );
+                        }}
                     />
+
                 </div>
 
                 {/* Descripción */}

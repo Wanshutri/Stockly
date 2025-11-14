@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { ProductoType } from "@/types/db";
 
 // ==================================================
 //  /api/ventas (GET y POST)
@@ -93,7 +94,7 @@ export async function POST(req: Request) {
           throw new Error(`Producto con SKU "${d.sku}" no encontrado`);
         }
 
-        const subtotal = producto.precio_compra * d.cantidad;
+        const subtotal = Number(producto.precio_compra) * d.cantidad;
 
         return {
           sku: d.sku,
@@ -117,7 +118,6 @@ export async function POST(req: Request) {
         data: {
           fecha: data.fecha ? new Date(data.fecha) : new Date(),
           total: totalCalculado,
-          id_cliente: data.id_cliente,
           id_pago: pago.id_pago,
           detalles_compra: {
             create: detallesConSubtotal.map((d) => ({

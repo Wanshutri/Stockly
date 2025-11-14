@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { Prisma } from '@prisma/client'
 import { z } from 'zod'
@@ -22,9 +22,13 @@ type Params = { params: { id: string } }
  * GET /api/marca/[id]
  * Obtiene una marca específica por su ID
  */
-export async function GET(_req: Request, context: { params: { id: string } }) {
+export async function GET(
+  _req: NextRequest,
+  context: { params: { id: string } | Promise<{ id: string }> }
+) {
   try {
-    const { id } = await context.params
+    const params = await context.params
+    const { id } = params
 
     const marcaDB = await prisma.marca.findUnique({
       where: { id_marca: parseInt(id) },
@@ -59,9 +63,13 @@ export async function GET(_req: Request, context: { params: { id: string } }) {
  * PUT /api/marca/[id]
  * Actualiza una marca existente, validando datos y duplicados
  */
-export async function PUT(_req: Request, context: { params: { id: string } }) {
+export async function PUT(
+  _req: NextRequest,
+  context: { params: { id: string } | Promise<{ id: string }> }
+) {
   try {
-    const { id } = await context.params
+    const params = await context.params
+    const { id } = params
 
     const marcaExistente = await prisma.marca.findUnique({ where: { id_marca: parseInt(id) } })
     if (!marcaExistente) {
@@ -147,9 +155,13 @@ export async function PUT(_req: Request, context: { params: { id: string } }) {
  * DELETE /api/marca/[id]
  * Elimina una marca si no tiene productos asociados
  */
-export async function DELETE(_req: Request, context: { params: { id: string } }) {
+export async function DELETE(
+  _req: NextRequest,
+  context: { params: { id: string } | Promise<{ id: string }> }
+) {
   try {
-    const { id } = await context.params
+    const params = await context.params
+    const { id } = params
 
     const marcaDB = await prisma.marca.findUnique({
       where: { id_marca: parseInt(id) },

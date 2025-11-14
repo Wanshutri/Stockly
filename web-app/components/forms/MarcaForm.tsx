@@ -14,7 +14,7 @@ const marcaSchema = z.object({
 type MarcaFormType = z.infer<typeof marcaSchema>;
 
 // ---------- Formulario ----------
-export default function MarcaForm({ item }: { item?: { nombre_marca: string } }) {
+export default function MarcaForm({ item }: { item?: { nombre_marca: string, id_marca : number } }) {
     const [serverError, setServerError] = useState<string | null>(null);
 
     const { control, handleSubmit, formState: { errors }, reset } = useForm<MarcaFormType>({

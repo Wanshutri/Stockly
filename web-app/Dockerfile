@@ -66,10 +66,6 @@ COPY --from=builder /app/public ./public
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/node_modules ./node_modules
 
-# Copiar entrypoint desde el builder y hacerlo ejecutable (hacerlo antes de cambiar a usuario no-root)
-COPY --from=builder /app/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
-RUN chmod +x /usr/local/bin/docker-entrypoint.sh
-
 # Ajustes de permisos
 USER nextjs
 
@@ -77,6 +73,4 @@ USER nextjs
 EXPOSE 80
 
 # Copiar entrypoint desde el builder y hacerlo ejecutable
-# Comando final (el entrypoint ejecutará migraciones/seed antes de iniciar)
-ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 CMD ["npm", "start"]

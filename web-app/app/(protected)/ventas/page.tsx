@@ -29,8 +29,7 @@ const INITIAL_CART: LineItem[] = [
 export default function POSPreview() {
   const router = useRouter()
   const { data: session } = useSession()
-  const userId = (session?.user as any)?.id ?? null
-  const { user } = useUser(userId)
+  const { user } = useUser()
   const [searchTerm, setSearchTerm] = useState('')
   const [searchResults, setSearchResults] = useState<SearchProductResult[]>([])
   const [searchLoading, setSearchLoading] = useState(false)

@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { Prisma } from '@prisma/client'
 import { z } from 'zod'
@@ -21,9 +21,13 @@ const productoUpdateSchema = z.object({
  * GET /api/productos/[sku]
  * Obtiene un producto específico por su SKU
  */
-export async function GET(_req: Request, context: { params: { sku: string } }) {
+export async function GET(
+  _req: NextRequest,
+  context: { params: { sku: string } | Promise<{ sku: string }> }
+) {
   try {
-    const { sku } = await context.params
+    const params = await context.params
+    const { sku } = params
 
     // Validar SKU
     if (!/^[A-Za-z0-9-]{1,50}$/.test(sku)) {
@@ -60,9 +64,13 @@ export async function GET(_req: Request, context: { params: { sku: string } }) {
  * PUT /api/productos/[sku]
  * Actualiza un producto existente, validando datos y referencias
  */
-export async function PUT(req: Request, context: { params: { sku: string } }) {
+export async function PUT(
+  req: NextRequest,
+  context: { params: { sku: string } | Promise<{ sku: string }> }
+) {
   try {
-    const { sku } = await context.params
+    const params = await context.params
+    const { sku } = params
 
     if (!/^[A-Za-z0-9-]{1,50}$/.test(sku)) {
       return NextResponse.json({ error: 'SKU inválido. Debe ser alfanumérico y máximo 50 caracteres.' }, { status: 400 })
@@ -119,7 +127,7 @@ export async function PUT(req: Request, context: { params: { sku: string } }) {
       precio_compra: Number(productoActualizado.precio_compra),
       descripcion: productoActualizado.descripcion,
       stock: productoActualizado.stock,
-      marca: productoActualizado.marca,
+      tipo_marca: productoActualizado.marca,
       tipo_categoria: productoActualizado.tipo_categoria
     }
 
@@ -137,9 +145,13 @@ export async function PUT(req: Request, context: { params: { sku: string } }) {
  * DELETE /api/productos/[sku]
  * Elimina un producto si no tiene dependencias
  */
-export async function DELETE(_req: Request, context: { params: { sku: string } }) {
+export async function DELETE(
+  req: NextRequest,
+  context: { params: { sku: string } | Promise<{ sku: string }> }
+) {
   try {
-    const { sku } = await context.params
+    const params = await context.params
+    const { sku } = params
 
     if (!/^[A-Za-z0-9-]{1,50}$/.test(sku)) {
       return NextResponse.json({ error: 'SKU inválido. Debe ser alfanumérico y máximo 50 caracteres.' }, { status: 400 })

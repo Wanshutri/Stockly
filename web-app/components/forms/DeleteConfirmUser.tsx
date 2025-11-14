@@ -2,30 +2,43 @@ import Swal from 'sweetalert2'
 import Toastify from 'toastify-js'
 import 'toastify-js/src/toastify.css'
 
-async function deleteRows(url: string, rows: any[], deletionKey: string) {
+type DeleteResult = {
+    success: boolean
+    error: Error | null
+}
+
+async function deleteRows<T extends Record<string, any>>(
+    url: string,
+    rows: T[],
+    deletionKey: keyof T
+): Promise<DeleteResult> {
     try {
         for (const row of rows) {
             const idValue = row[deletionKey]
-            if (idValue === undefined) throw new Error(`La fila no tiene la propiedad ${deletionKey}`)
+            if (idValue === undefined)
+                throw new Error(`La fila no tiene la propiedad ${String(deletionKey)}`)
 
             const response = await fetch(`${url}/${idValue}`, {
                 method: 'DELETE',
             })
 
-            if (!response.ok) throw new Error(`Error al eliminar ${row.sku ?? idValue}`)
+            if (response.status === 409)
+                throw new Error(`No se puede eliminar porque está asociado a algún item`)
+
+            if (!response.ok)
+                throw new Error(`Error al eliminar ${('sku' in row ? row.sku : idValue)}`)
         }
-        return true
-    } catch (error) {
-        console.error(error)
-        return false
+        return { success: true, error: null }
+    } catch (error: any) {
+        return { success: false, error }
     }
 }
 
-export default function OpenPopUp(
-    rows: any[],
+export default function OpenPopUp<T extends Record<string, any>>(
+    rows: T[],
     url: string,
     name: string,
-    deletionKey: string,
+    deletionKey: keyof T,
     onSuccess?: () => void
 ) {
     const n = rows.length
@@ -41,10 +54,10 @@ export default function OpenPopUp(
         cancelButtonText: 'Cancelar',
     }).then(async (result) => {
         if (result.isConfirmed) {
-            const success = await deleteRows(url, rows, deletionKey)
+            const resultDelete = await deleteRows(url, rows, deletionKey)
 
-            if (success) {
-                if (onSuccess) onSuccess()
+            if (resultDelete.success) {
+                onSuccess?.()
 
                 Toastify({
                     text: `${n} ${name}${n > 1 ? 's' : ''} eliminado${n > 1 ? 's' : ''} correctamente.`,
@@ -64,7 +77,7 @@ export default function OpenPopUp(
             } else {
                 Swal.fire({
                     title: 'Error',
-                    text: 'Ocurrió un problema al eliminar los registros.',
+                    text: resultDelete.error?.message,
                     icon: 'error',
                 })
             }
