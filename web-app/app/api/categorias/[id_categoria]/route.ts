@@ -3,10 +3,10 @@ import db from "@/lib/pg";
 
 export async function GET(
     request: Request,
-    { params }: { params: { id_categoria: string } }
+    { params }: { params: Promise<{ id_categoria: string }> }
 ) {
-    const p = await params
-    const id_categoria = p.id_categoria;
+    const p: any = await params
+    const id_categoria: string = p.id_categoria;
 
     try {
         const query = `
@@ -47,11 +47,11 @@ export async function GET(
 
 export async function PUT(
     request: Request,
-    { params }: { params: { id_categoria: number } }
+    { params }: { params: Promise<{ id_categoria: string }> }
 ) {
     try {
-        const p = await params
-        const id_categoria = p.id_categoria;
+        const p: any = await params
+        const id_categoria: string = p.id_categoria;
 
         const {
             nombre_categoria
@@ -142,11 +142,11 @@ export async function PUT(
 
 export async function DELETE(
     request: Request,
-    { params }: { params: { id_categoria: string } }
+    { params }: { params: Promise<{ id_categoria: string }> }
 ) {
     try {
-        const p = await params
-        const id_categoria = p.id_categoria;
+        const p : any = await params
+        const id_categoria : string = p.id_categoria;
 
         // Verificar si existe
         const selectQuery = `
@@ -170,8 +170,8 @@ export async function DELETE(
         const row = selectResult.rows[0];
 
         const deletedCategory: Categoria = {
-            id_categoria : row.id_categoria,
-            nombre_categoria : row.nombre_categoria?.trim() // trim agregado
+            id_categoria: row.id_categoria,
+            nombre_categoria: row.nombre_categoria?.trim() // trim agregado
         };
 
         // Eliminar categoria

@@ -16,7 +16,7 @@ interface GenericTableProps {
     formulario: React.ReactElement<any>;
 }
 
-export default function ProductoTable({
+export default function CategoriaTable({
     columnsDef,
     formulario
 }: GenericTableProps) {
@@ -59,30 +59,22 @@ export default function ProductoTable({
 
     const fetchData = async () => {
         try {
-            const res = await fetch("/api/productos");
+            const res = await fetch("/api/categorias");
 
             if (!res.ok) {
-                throw new Error("Error al obtener productos");
+                throw new Error("Error al obtener categorías");
             }
 
-            const data: Producto[] = await res.json();
+            const data: Categoria[] = await res.json();
 
-            const ps = data.map((p: Producto) => {
-                return {
-                    sku: p.sku,
-                    nombre: p.nombre,
-                    precio_compra: p.precio_compra,
-                    gtin: p.gtin,
-                    precio_venta: p.precio_venta,
-                    stock: p.stock,
-                    tipo_categoria: p.categoria.nombre_categoria,
-                    marca: p.marca.nombre_marca
-                };
-            });
+            const cs = data.map((c: Categoria) => ({
+                id_categoria: c.id_categoria,
+                nombre_categoria: c.nombre_categoria
+            }));
 
-            setRows(ps);
+            setRows(cs);
         } catch (error) {
-            console.error("Error cargando productos:", error);
+            console.error("Error cargando categorías:", error);
         } finally {
             setLoading(false);
         }
@@ -90,12 +82,12 @@ export default function ProductoTable({
 
     useEffect(() => {
         fetchData();
-    }, []); // se ejecuta una vez al montar
+    }, []);
 
-    function handleUpdate() {
+    const handleUpdate = () => {
         setSelectedRows([]);
         fetchData();
-    }
+    };
 
     if (loading) {
         return (
@@ -110,7 +102,7 @@ export default function ProductoTable({
             <div style={{ height: 600, width: "100%" }}>
                 <DataGrid
                     rows={rows}
-                    getRowId={(row) => row.sku}
+                    getRowId={(row) => row.id_categoria}
                     columns={columnsWithAction}
                     checkboxSelection
                     disableRowSelectionOnClick
@@ -123,34 +115,28 @@ export default function ProductoTable({
                                 rowsSelected={selectedRows}
                                 handleUpdate={handleUpdate}
                                 formulario={formulario}
-                                title={"Producto"}
-                                url={"api/productos"}
-                                deletionKey={"sku"}
+                                title={"Categoría"}
+                                url={"api/categorias"}
+                                deletionKey={"id_categoria"}
                             />
                         ),
                     }}
                     onRowSelectionModelChange={(newSelectionModel: GridRowSelectionModel) => {
-
-                        // Extract the IDs from the new selection model
                         const selectedIDs = Array.from(newSelectionModel.ids || []);
-
-                        // Filter your original 'rows' data to get the complete selected row objects
-                        const selectedRows = rows.filter((row) => selectedIDs.includes(row.sku));
-
-                        setSelectedRows(selectedRows)
+                        const selectedRows = rows.filter((row) => selectedIDs.includes(row.id_categoria));
+                        setSelectedRows(selectedRows);
                     }}
                 />
             </div>
 
-            {/* --- Modal de Detalle / Edición --- */}
             <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
                 <DialogTitle>Detalles</DialogTitle>
                 <DialogContent>
-                    {cloneElement(formulario as React.ReactElement<{ item: Producto; onSuccess?: () => void }>, {
-                        item: selectedItem, // si es undefined, no pasa nada
+                    {cloneElement(formulario as React.ReactElement<{ item: Categoria; onSuccess?: () => void }>, {
+                        item: selectedItem,
                         onSuccess: () => {
-                            handleUpdate(); // refresca tabla
-                            handleClose();  // cierra modal
+                            handleUpdate();
+                            handleClose();
                         }
                     })}
                 </DialogContent>

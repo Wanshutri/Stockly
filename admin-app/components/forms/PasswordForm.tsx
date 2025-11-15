@@ -47,7 +47,8 @@ export default function ChangePasswordModal({ isOpen, onClose, userId }: ModalPr
   if (!isOpen) return null;
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setPasswords({ ...passwords, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setPasswords((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

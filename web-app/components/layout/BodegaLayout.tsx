@@ -9,6 +9,8 @@ import ProductForm from '../forms/ProductForm';
 import MarcaForm from '../forms/MarcaForm';
 import CategoriaForm from '../forms/CategoriaForm';
 import ProductoTable from '../ui/BodegaTableProductos';
+import MarcaTable from '../ui/BodegaTableMarcas';
+import CategoriaTable from '../ui/BodegaTableCategorias';
 
 interface TabPanelProps {
     children?: React.ReactNode;
@@ -56,13 +58,13 @@ export default function BodegaLayout() {
                 </Tabs>
             </Box>
             <CustomTabPanel value={value} index={0}>
-                <ProductoTable formulario={<ProductForm></ProductForm>} columnsDef={productColumns}></ProductoTable>
+                <ProductoTable formulario={<ProductForm />} columnsDef={productColumns}></ProductoTable>
             </CustomTabPanel>
             <CustomTabPanel value={value} index={1}>
-                {/* <BodegaTable formulario={<MarcaForm></MarcaForm>} apiUrl="api/marcas" deletionKey='id_marca' title='Marca' columnsDef={marcaColumns}></BodegaTable> */}
+                <MarcaTable formulario={<MarcaForm />} columnsDef={marcaColumns}></MarcaTable>
             </CustomTabPanel>
             <CustomTabPanel value={value} index={2}>
-                <div></div>
+                <CategoriaTable columnsDef={categoriasColumns} formulario={<CategoriaForm/>}></CategoriaTable>
             </CustomTabPanel>
         </Box>
     );

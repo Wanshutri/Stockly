@@ -41,6 +41,11 @@ const authOptions = {
                         throw new Error('Cuenta deshabilitada, contacte a su administrador.');
                     }
 
+                    // Restricción: solo administradores (id_tipo === 1) pueden iniciar sesión en el admin-app
+                    if (user.id_tipo !== 1) {
+                        throw new Error('Acceso restringido: solo administradores pueden iniciar sesión en este panel.');
+                    }
+
                     return {
                         id: String(user.id_usuario),
                         name: user.nombre,

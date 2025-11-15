@@ -16,7 +16,7 @@ interface GenericTableProps {
     formulario: React.ReactElement<any>;
 }
 
-export default function ProductoTable({
+export default function MarcaTable({
     columnsDef,
     formulario
 }: GenericTableProps) {
@@ -59,30 +59,24 @@ export default function ProductoTable({
 
     const fetchData = async () => {
         try {
-            const res = await fetch("/api/productos");
+            const res = await fetch("/api/marcas");
 
             if (!res.ok) {
-                throw new Error("Error al obtener productos");
+                throw new Error("Error al obtener marcas");
             }
 
-            const data: Producto[] = await res.json();
+            const data: Marca[] = await res.json();
 
-            const ps = data.map((p: Producto) => {
+            const ms = data.map((m: Marca) => {
                 return {
-                    sku: p.sku,
-                    nombre: p.nombre,
-                    precio_compra: p.precio_compra,
-                    gtin: p.gtin,
-                    precio_venta: p.precio_venta,
-                    stock: p.stock,
-                    tipo_categoria: p.categoria.nombre_categoria,
-                    marca: p.marca.nombre_marca
+                    id_marca : m.id_marca,
+                    nombre_marca : m.nombre_marca
                 };
             });
 
-            setRows(ps);
+            setRows(ms);
         } catch (error) {
-            console.error("Error cargando productos:", error);
+            console.error("Error cargando marcas:", error);
         } finally {
             setLoading(false);
         }
@@ -110,7 +104,7 @@ export default function ProductoTable({
             <div style={{ height: 600, width: "100%" }}>
                 <DataGrid
                     rows={rows}
-                    getRowId={(row) => row.sku}
+                    getRowId={(row) => row.id_marca}
                     columns={columnsWithAction}
                     checkboxSelection
                     disableRowSelectionOnClick
@@ -123,9 +117,9 @@ export default function ProductoTable({
                                 rowsSelected={selectedRows}
                                 handleUpdate={handleUpdate}
                                 formulario={formulario}
-                                title={"Producto"}
-                                url={"api/productos"}
-                                deletionKey={"sku"}
+                                title={"Marca"}
+                                url={"api/marcas"}
+                                deletionKey={"id_marca"}
                             />
                         ),
                     }}
@@ -135,7 +129,8 @@ export default function ProductoTable({
                         const selectedIDs = Array.from(newSelectionModel.ids || []);
 
                         // Filter your original 'rows' data to get the complete selected row objects
-                        const selectedRows = rows.filter((row) => selectedIDs.includes(row.sku));
+                        console.log(selectedIDs)
+                        const selectedRows = rows.filter((row) => selectedIDs.includes(row.id_marca));
 
                         setSelectedRows(selectedRows)
                     }}
@@ -146,7 +141,7 @@ export default function ProductoTable({
             <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
                 <DialogTitle>Detalles</DialogTitle>
                 <DialogContent>
-                    {cloneElement(formulario as React.ReactElement<{ item: Producto; onSuccess?: () => void }>, {
+                    {cloneElement(formulario as React.ReactElement<{ item: Marca; onSuccess?: () => void }>, {
                         item: selectedItem, // si es undefined, no pasa nada
                         onSuccess: () => {
                             handleUpdate(); // refresca tabla

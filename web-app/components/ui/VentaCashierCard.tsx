@@ -4,14 +4,12 @@ import cn from "../hooks/cn";
  *************************/
 export type CashierCardProps = {
   cashierName: string;
-  statusText?: string; // e.g., "Listo para escanear"
   onClearCart?: () => void;
   className?: string;
 };
 
 export const CashierCard: React.FC<CashierCardProps> = ({
   cashierName,
-  statusText = "Listo para escanear",
   onClearCart,
   className,
 }) => {
@@ -25,7 +23,6 @@ export const CashierCard: React.FC<CashierCardProps> = ({
     >
       <div className="text-xl font-extrabold">Cajero:</div>
       <div className="text-lg font-semibold">{cashierName}</div>
-      <div className="text-sm text-neutral-600">{statusText}</div>
 
       <div className="pt-2">
         <button

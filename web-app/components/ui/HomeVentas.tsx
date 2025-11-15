@@ -1,12 +1,12 @@
 "use client";
 
-import { CompraType } from '@/types/db';
 import SellIcon from '@mui/icons-material/Sell';
 import { useEffect, useState } from 'react';
 
 export default function HomeVentas() {
 
-    const [ventas, setVentas] = useState<CompraType[]>([]);
+    // ahora puede ser null para que isLoading tenga sentido
+    const [ventas, setVentas] = useState<any[] | null>(null);
     const [error, setError] = useState<string>("");
 
     const [gananciasHoy, setGananciasHoy] = useState<number>(0);
@@ -17,7 +17,8 @@ export default function HomeVentas() {
 
         const fetchVentas = async () => {
             try {
-                const res = await fetch("/api/ventas", { method: "GET", cache: "no-store" });
+
+                const res = await fetch("/api/compras", { method: "GET", cache: "no-store" });
                 if (!res.ok) {
                     if (res.status === 404) {
                         if (!cancelled) setVentas([]);
@@ -26,21 +27,22 @@ export default function HomeVentas() {
                     throw new Error(`HTTP ${res.status}`);
                 }
 
-                const data = await res.json();
+
+                const data: any[] = await res.json();
 
                 if (!cancelled) {
-                    setVentas(data.ventas ?? []);
+                    const lista = data ?? [];
+                    setVentas(lista);
 
-                    // Calcular ganancias del día
-                    const totalGanancias = (data.ventas ?? []).reduce(
-                        (acc: number, venta: CompraType) => acc + Number(venta.total),
+
+                    const totalGanancias = lista.reduce(
+                        (acc: number, venta: any) => acc + Number(venta.total),
                         0
                     );
-
                     setGananciasHoy(totalGanancias);
 
-                    // BASE: aquí luego conectas tu API para traer las ganancias reales del mes pasado
-                    setGananciasMesPasado(800000); // <-- valor de ejemplo
+
+                    setGananciasMesPasado(800000);
                 }
             } catch (e) {
                 if (!cancelled) setError("No se pudo obtener las ventas");
@@ -52,8 +54,9 @@ export default function HomeVentas() {
     }, []);
 
     const isLoading = ventas === null && !error;
+    const ventasList = ventas ?? [];
 
-    // Comparación: porcentaje respecto al mes pasado
+
     const porcentaje = gananciasMesPasado > 0
         ? ((gananciasHoy - gananciasMesPasado) / gananciasMesPasado) * 100
         : 0;
@@ -83,24 +86,19 @@ export default function HomeVentas() {
                             ? "Cargando…"
                             : error
                                 ? "—"
-                                : ventas.length === 0
+                                : ventasList.length === 0
                                     ? "Sin ventas"
-                                    : `$${gananciasHoy.toLocaleString()}`
+                                    : `$${gananciasHoy.toLocaleString("es-CL")}`
                         }
                     </h4>
                 </div>
 
                 <div className="col-start-2 row-start-3">
-                    <p className={`text-sm font-medium ${porcentajeColor}`}>
-                        {isLoading
-                            ? "Cargando…"
-                            : error
-                                ? "—"
-                                : ventas.length === 0
-                                    ? "Registradas en el sistema"
-                                    : `${porcentaje.toFixed(2)}% respecto al mes pasado`
-                        }
+                    <p className="text-sm text-black/90">
+                       Totales de venta diarios de <span className="text-orange-500 font-medium">STOCKY</span>
                     </p>
+
+
                 </div>
 
             </div>

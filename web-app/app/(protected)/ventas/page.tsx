@@ -7,16 +7,13 @@ import { VentaTable, LineItem } from '@/components/ui/VentaTable'
 import { TableFooterSummary } from '@/components/ui/VentaTableFooter'
 import { CashierCard } from '@/components/ui/VentaCashierCard'
 import { SearchProductCard, SearchProductResult } from '@/components/ui/VentaSearchProductCard'
-import { BigActionCard } from '@/components/ui/VentaBigActionCard'
+import VentasPagosCard from '@/components/ui/VentasPagosCard'
+import PagarButton from '@/components/ui/PagarButton'
 import useUser from '@/components/hooks/useUser'
-import type { ProductoType } from '@/types/db'
-import PaymentIcon from '@mui/icons-material/Payment';
-import CenterFocusWeakIcon from '@mui/icons-material/CenterFocusWeak';
-import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
+
 
 const TAX_RATE = 0.19
 const CURRENCY = 'CLP'
-const MOCK_CATALOG: Array<Omit<LineItem, 'qty'>> = []
 
 const INITIAL_CART: LineItem[] = []
 
@@ -30,8 +27,9 @@ export default function POSPreview() {
   const [searchError, setSearchError] = useState<string | null>(null)
   const [hasSearched, setHasSearched] = useState(false)
   const [cartItems, setCartItems] = useState<LineItem[]>(INITIAL_CART)
-  const cashierName =
-    user?.nombre || (session?.user as any)?.name || 'Cajero'
+  const [montoEfectivo, setMontoEfectivo] = useState<number>(0)
+  const [montoTarjeta, setMontoTarjeta] = useState<number>(0)
+  const cashierName = user?.nombre || (session?.user as any)?.name || 'Cajero'
 
   useEffect(() => {
     if (!searchTerm.trim()) {
@@ -105,11 +103,12 @@ export default function POSPreview() {
         throw new Error(body || 'No se pudo obtener la lista de productos')
       }
 
-      let productos: ProductoType[] = []
+      let productos: Producto[] = []
 
       if (response.ok) {
         const data = await response.json()
-        productos = data.productos ?? []
+        console.log(data)
+        productos = data ?? []
       }
 
       const filtered = productos
@@ -125,6 +124,10 @@ export default function POSPreview() {
           name: product.nombre,
           price: Number(product.precio_venta),
           stock: product.stock,
+          gtin: product.gtin,
+          precio_compra: product.precio_compra,
+          categoria: product.categoria,
+          marca: product.marca,
         }))
 
       setSearchResults(filtered)
@@ -146,49 +149,65 @@ export default function POSPreview() {
       sku: product.sku,
       name: product.name,
       price: product.price,
+      gtin: product.gtin,
+      precio_compra: product.precio_compra,
+      stock: product.stock,
+      categoria: product.categoria,
+      marca: product.marca,
     })
     setSearchTerm('')
     setSearchResults([])
     setHasSearched(false)
   }
 
-  const handlePay = () => {
-    if (!cartItems.length) return
-    router.push('/ventas/pagar')
-  }
-
   // Envía una venta al endpoint POST /api/ventas
-  const submitSale = async (isCard: boolean) => {
+  const submitSale = async () => {
     if (!cartItems.length) return
 
-    const fecha = new Date().toISOString() // fecha de hoy en formato ISO
-    const pago = isCard
-      ? { monto_efectivo: 0, monto_tarjeta: total }
-      : { monto_efectivo: total, monto_tarjeta: 0 }
+    const monto_efectivo = Math.round(Number(montoEfectivo || 0))
+    const monto_tarjeta = Math.round(Number(montoTarjeta || 0))
 
     const detalles = cartItems.map((item) => ({
-      sku: item.sku,
+      producto: {
+        sku: item.sku,
+        nombre: item.name,
+        gtin: item.gtin,
+        precio_venta: item.price,
+        precio_compra: item.precio_compra,
+        stock: item.stock,
+        categoria: item.categoria,
+        marca: item.marca,
+      },
       cantidad: item.qty,
+      subtotal: item.price * item.qty,
     }))
 
+    const body = {
+      total,
+      monto_tarjeta,
+      monto_efectivo,
+      detalles,
+    }
+
     try {
-      const res = await fetch('/api/ventas', {
+      const res = await fetch('/api/compras', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fecha, pago, detalles }),
+        body: JSON.stringify(body),
       })
 
-      const body = await res.json().catch(() => ({}))
+      const responseBody = await res.json().catch(() => ({}))
 
       if (!res.ok) {
-        console.error('Error creating sale:', body)
-        alert(body.error || 'Error al crear la venta')
+        console.error('Error creating sale:', responseBody)
+        alert(responseBody.error || 'Error al crear la venta')
         return
       }
 
-      // Venta creada: limpiar carrito y navegar al detalle de la venta si viene el id
       setCartItems([])
-      const ventaId = body?.venta?.id_compra
+      setMontoEfectivo(0)
+      setMontoTarjeta(0)
+      const ventaId = responseBody?.venta?.id_compra
       if (ventaId) {
         router.push(`/ventas/${ventaId}`)
       } else {
@@ -224,16 +243,14 @@ export default function POSPreview() {
 
         <div className="grid grid-cols-2 gap-4">
           <CashierCard cashierName={cashierName} onClearCart={handleClear} />
-
-
-          {/* <BigActionCard
-            label=""
-            amount={"Escanear Productos"}
-            currency={""}
-
-            disabled={false}
-            icon={<CenterFocusWeakIcon />}
-          /> */}
+          <PagarButton
+            total={total}
+            montoEfectivo={montoEfectivo}
+            montoTarjeta={montoTarjeta}
+            currency={CURRENCY}
+            disabled={!cartItems.length}
+            onPay={submitSale}
+          />
         </div>
 
         <SearchProductCard
@@ -247,34 +264,11 @@ export default function POSPreview() {
           onSelectResult={handleSelectSearchResult}
         />
 
-        <div className="grid grid-cols-2 gap-4">
-          <BigActionCard
-            label="$ PAGAR EFECTIVO"
-            amount={total}
-            currency={CURRENCY}
-            onClick={() => submitSale(false)}
-            disabled={!cartItems.length}
-            icon={<AttachMoneyIcon />}
-            color="blue"
+        <div className="grid gap-2">
+          <VentasPagosCard
+            onEfectivoChange={setMontoEfectivo}
+            onTarjetaChange={setMontoTarjeta}
           />
-          <BigActionCard
-            label="$ PAGAR TARJETA"
-            amount={total}
-            currency={CURRENCY}
-            onClick={() => submitSale(true)}
-            disabled={!cartItems.length}
-            icon={<PaymentIcon />}
-            color="orange"
-          />
-
-          {/* <BigActionCard
-            label=""
-            amount={"Escanear Productos"}
-            currency={""}
-
-            disabled={false}
-            icon={<CenterFocusWeakIcon />}
-          /> */}
         </div>
       </div>
     </div>

@@ -1,87 +1,96 @@
-"use client";
-
-import { Button, TextField } from "@mui/material";
+import { TextField, Button } from "@mui/material";
 import { useState } from "react";
-import { useForm, Controller, SubmitHandler } from "react-hook-form";
-import { z } from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
+import Toastify from 'toastify-js';
 
-// ---------- Esquema de validación ----------
-const categoriaSchema = z.object({
-    nombre: z.string().trim().min(1, "El nombre de la categoría es obligatorio"),
-});
+export default function CategoriaForm({ item, onSuccess }: { item?: Categoria, onSuccess?: () => void }) {
+    const [categoriaNombre, setCategoriaNombre] = useState<string>(item?.nombre_categoria || "");
+    const [loading, setLoading] = useState(false);
+    const [errorMsg, setErrorMsg] = useState("");
 
-type CategoriaFormType = z.infer<typeof categoriaSchema>;
+    const resetFormFields = () => {
+        setCategoriaNombre("");
+        setErrorMsg("");
+    }
 
-// ---------- Formulario ----------
-export default function CategoriaForm({ item }: { item?: { nombre_categoria: string; id_categoria?: number } }) {
-    const [serverError, setServerError] = useState<string | null>(null);
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setErrorMsg("");
+        setLoading(true);
 
-    const { control, handleSubmit, formState: { errors }, reset } = useForm<CategoriaFormType>({
-        resolver: zodResolver(categoriaSchema),
-        defaultValues: {
-            nombre: item?.nombre_categoria || "",
-        },
-    });
-
-    const onSubmit: SubmitHandler<CategoriaFormType> = async (data) => {
-        setServerError(null);
+        // Validación de longitud
+        if (categoriaNombre.trim().length <= 3) {
+            setErrorMsg("El nombre de la categoría debe tener al menos 4 caracteres");
+            setLoading(false);
+            return;
+        }
 
         try {
-            const res = await fetch(`/api/categorias${item ? "/" + item?.id_categoria : ""}`, {
-                method: item ? "PUT" : "POST",
+            const payload = {
+                nombre_categoria: categoriaNombre.trim()
+            };
+
+            const method = item ? "PUT" : "POST";
+            const url = item ? `/api/categorias/${item.id_categoria}` : `/api/categorias`;
+
+            const res = await fetch(url, {
+                method,
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    nombre_categoria: data.nombre
-                }),
+                body: JSON.stringify(payload)
             });
 
             if (!res.ok) {
-                const err = await res.json().catch(() => ({}));
-                setServerError(err.error || "Error al guardar la categoría. Intenta nuevamente.");
+                const errorData = await res.json();
+                setErrorMsg("Error al guardar la categoría: " + (errorData.error || JSON.stringify(errorData.error)));
                 return;
             }
 
-            reset();
-            window.location.reload();
-        } catch (error) {
-            console.error("Error en la solicitud:", error);
-            setServerError("Error de conexión con el servidor.");
+            Toastify({
+                text: item ? "Categoría Actualizada Correctamente" : "Categoría Creada Correctamente",
+                gravity: "bottom",
+                position: "right",
+                duration: 3000
+            }).showToast();
+
+            // Reseteo si es creación
+            if (!item) {
+                resetFormFields();
+            }
+
+            if (onSuccess) onSuccess();
+
+        } catch {
+            setErrorMsg("No se pudo conectar con el servidor");
+        } finally {
+            setLoading(false);
         }
     };
 
     return (
-        <div>
-            <h3 className="text-2xl font-semibold mb-4">
-                {item ? "Editar Categoría" : "Nueva Categoría"}
-            </h3>
-
-            <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4">
-                <Controller
-                    name="nombre"
-                    control={control}
-                    render={({ field }) => (
-                        <TextField
-                            {...field}
-                            label="Nombre de la Categoría"
-                            variant="outlined"
-                            error={!!errors.nombre}
-                            helperText={errors.nombre?.message}
-                            fullWidth
-                        />
-                    )}
-                />
-
-                <div className="flex flex-col items-center pt-3">
-                    <Button type="submit" variant="contained">
-                        {item ? "Actualizar" : "Crear"}
-                    </Button>
-
-                    <p className="text-red-500 mt-1">
-                        {serverError || "ㅤ"}
-                    </p>
+        <form onSubmit={handleSubmit} className="h-120 max py-5">
+            <div className="grid gap-y-5">
+                <div>
+                    <TextField
+                        fullWidth
+                        label="Nombre de la categoría"
+                        value={categoriaNombre}
+                        onChange={(e) => setCategoriaNombre(e.target.value)}
+                        variant="outlined"
+                    />
                 </div>
-            </form>
-        </div>
+
+                {errorMsg && (
+                    <p className="text-red-600 text-sm">{errorMsg}</p>
+                )}
+
+                <Button
+                    type="submit"
+                    variant="contained"
+                    fullWidth
+                    disabled={loading}
+                >
+                    {loading ? "Guardando..." : "Guardar Categoría"}
+                </Button>
+            </div>
+        </form>
     );
 }

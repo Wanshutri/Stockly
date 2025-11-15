@@ -13,10 +13,9 @@ const ArrowRightIcon = (props: React.SVGProps<SVGSVGElement>) => (
 );
 
 export default function Page() {
-   const { user } = useUser(); // Hook para obtener el usuario logueado
+   const { user } = useUser();
 
    return (
-      // Asumiendo que tu layout.tsx ya provee el fondo bg-gray-50 y el navbar
       <main className="flex-grow p-4 sm:p-6 lg:p-8">
          <div className="max-w-7xl mx-auto space-y-8">
 
@@ -33,17 +32,15 @@ export default function Page() {
             {/* --- Sección 2: Módulo Principal (Ocupa toda la pantalla) --- */}
             <div className="bg-gradient-to-br from-gray-700 to-blue-500 rounded-2xl shadow-xl 
                         p-12 lg:p-20 flex flex-col items-center justify-center text-center
-                        min-h-[calc(100vh-300px)]"> {/* Ajusta el min-h si tu navbar es más alto */}
+                        min-h-[calc(100vh-300px)]">
 
-               {/* Icono Grande (¡ACTUALIZADO!) */}
                <div className="bg-white/10 p-4 rounded-full backdrop-blur-sm border-2 border-white/20">
                   <PersonOutlineIcon sx={{
-                     fontSize: '6rem',  // 64px (w-16 h-16)
-                     color: 'white'     // Color blanco
+                     fontSize: '6rem',
+                     color: 'white'    
                   }} />
                </div>
 
-               {/* Título */}
                <h3 className="mt-8 text-4xl font-extrabold text-white tracking-tight">
                   Gestión de Usuarios
                </h3>
@@ -51,7 +48,6 @@ export default function Page() {
                   Añadir, editar o desactivar las cuentas de usuario del sistema. Esta es la sección principal de este panel.
                </p>
 
-               {/* Botón/Link CTA */}
                <Link
                   href="/users"
                   className="mt-10 inline-flex items-center gap-2 py-3 px-8

@@ -55,9 +55,8 @@ export default function EditUserModal({ open, onClose, userToEdit, onUpdate }: P
 
         const payload: any = {
             nombre: formData.nombre,
-            // --- ¡CORRECCIÓN AQUÍ! ---
-            // Tu API espera 'idTipo' (camelCase)
-            idTipo: roleMap[formData.rol as string] || 2,
+            // En el API se espera `id_tipo` (snake_case). Enviar ese campo.
+            id_tipo: roleMap[formData.rol as string] ?? roleMap['Vendedor'],
             activo: formData.estado === 'Activo'
         };
 

@@ -41,7 +41,9 @@ export default withAuth({
         return false;
       }
 
-      const role = Number((token as any).role);
+      // Leer `id_tipo` del token (preferido). Soportar `idTipo` y `role` como fallback.
+      const rawRole = (token as any).id_tipo ?? (token as any).idTipo ?? (token as any).role;
+      const role = Number(rawRole ?? -1);
 
       // vendedor → rutas solo para vendedor y admin
       if (vendedorPaths.some((path) => pathname.startsWith(path))) {

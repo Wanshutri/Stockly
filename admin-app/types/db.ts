@@ -1,4 +1,4 @@
-export interface UsuarioType {
+interface UsuarioType {
     id_usuario: number;
     nombre: string;
     email: string;
@@ -7,3 +7,5 @@ export interface UsuarioType {
     id_tipo: number;
     created_at?: Date;
 }
+
+export default UsuarioType;

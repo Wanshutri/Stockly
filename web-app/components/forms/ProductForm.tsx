@@ -1,352 +1,312 @@
-"use client";
-
-import { Autocomplete, Button, TextField } from "@mui/material";
+import { Autocomplete, TextField, Button } from "@mui/material";
 import { useEffect, useState } from "react";
-import { useForm, Controller, SubmitHandler } from "react-hook-form";
-import { z } from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
+import NumberField from "./NumberField";
+import Toastify from 'toastify-js'
+import { any } from "zod";
 
-// ---------- Conversión segura a número ----------
-const toNumber = (val: unknown) => {
-    if (val === "" || val === null || val === undefined) return undefined;
-    const num = Number(val);
-    return Number.isFinite(num) ? num : NaN;
-};
+export default function ProductoForm({ item, onSuccess }: { item?: Producto, onSuccess?: () => void }) {
+    const [categorias, setCategorias] = useState<Categoria[]>([]);
+    const [marcas, setMarcas] = useState<Marca[]>([]);
 
-// ---------- Campo numérico con validación ----------
-const numericField = (label: string, positive = false) =>
-    z.preprocess(toNumber, z.number().optional())
-        .refine((val) => val !== undefined, { message: `${label} es obligatorio` })
-        .refine((val) => !isNaN(Number(val)), { message: `${label} debe ser un número válido` })
-        .refine((val) => (positive ? val! > 0 : val! >= 0), {
-            message: positive
-                ? `${label} debe ser mayor que 0`
-                : `${label} no puede ser negativo`,
-        });
+    // estados controlados
+    const [precioVenta, setPrecioVenta] = useState<number | "">(
+        () => (item ? item.precio_venta : "")
+    );
+    const [precioCompra, setPrecioCompra] = useState<number | "">(
+        () => (item ? item.precio_compra : "")
+    );
+    const [stock, setStock] = useState<number | "">(() => (item ? item.stock : ""));
 
-// ---------- Esquema de validación ----------
-const itemSchema = z.object({
-    sku: z.string().trim().min(1, "El SKU es obligatorio"),
-    gtin: z.string().trim().min(1, "El GTIN es obligatorio"),
-    nombre: z.string().trim().min(1, "El nombre es obligatorio"),
-    precioVenta: numericField("Precio de venta", true),
-    precioCompra: numericField("Precio de compra", true),
-    stock: numericField("Stock"),
-    categoria: z.object({ id: z.number(), label: z.string() })
-        .nullable()
-        .refine((v) => v !== null, { message: "La categoría es obligatoria" }),
+    const [gtin, setGtin] = useState<string>("");
 
-    marca: z.object({ id: z.number(), label: z.string() })
-        .nullable()
-        .refine((v) => v !== null, { message: "La marca es obligatoria" }),
-});
+    const [nombre, setNombre] = useState<string>("");
 
-type ItemForm = z.infer<typeof itemSchema>;
+    const [skuOriginal, setSkuOriginal] = useState<string>("");
+    const [skuFinal, setSkuFinal] = useState<string>("");
 
-export default function ProductoForm({ item }: { item?: Producto }) {
-    const [categorias, setCategorias] = useState<any[]>([]);
-    const [marcas, setMarcas] = useState<any[]>([]);
-    const [serverError, setServerError] = useState<string | null>(null);
+    const [selectedCategoria, setSelectedCategoria] = useState<Categoria | null>(null);
+    const [selectedMarca, setSelectedMarca] = useState<Marca | null>(null);
 
-    const { control, handleSubmit, formState: { errors }, reset } = useForm({
-        resolver: zodResolver(itemSchema),
-        defaultValues: {
-            sku: item?.sku || "",
-            gtin: item?.gtin || "",
-            nombre: item?.nombre || "",
-            precioVenta: item?.precio_venta ?? 0,
-            precioCompra: item?.precio_compra ?? 0,
-            stock: item?.stock ?? 0,
-            categoria: item?.categoria
-                ? { id: item.categoria.id_categoria, label: item.categoria.nombre_categoria }
-                : null,
-            marca: item?.marca
-                ? { id: item.marca.id_marca, label: item.marca.nombre_marca }
-                : null,
+    const [loading, setLoading] = useState(false);
+    const [errorMsg, setErrorMsg] = useState("");
+
+    // Función helper para parsear número seguro
+    const parseNumber = (value: string): number | "" => {
+        const n = Number(value);
+        return isNaN(n) ? "" : n;
+    };
+
+    useEffect(() => {
+        const loadData = async () => {
+            try {
+                const resCat = await fetch("/api/categorias");
+                const resMar = await fetch("/api/marcas");
+
+                const dataCat: Categoria[] = await resCat.json();
+                const dataMar: Marca[] = await resMar.json();
+
+                setCategorias(dataCat);
+                setMarcas(dataMar);
+
+                if (item) {
+                    const cat: Categoria | null =
+                        dataCat.find((c: Categoria) => c.nombre_categoria === (item as any).tipo_categoria) ?? null;
+                    const mar: Marca | null =
+                        dataMar.find((m: any) => m.nombre_marca === item?.marca) ?? null;
+
+                    setSelectedCategoria(cat || null);
+                    setSelectedMarca(mar || null);
+                }
+            } catch (err) {
+                console.error("Error cargando datos", err);
+            }
+        };
+
+        loadData();
+    }, []);
+
+    // sincronizar cuando cambie item
+    useEffect(() => {
+        setPrecioVenta(item ? item.precio_venta : "");
+        setPrecioCompra(item ? item.precio_compra : "");
+        setStock(item ? item.stock : "");
+        setGtin(item ? item.gtin || "" : "");
+        setSkuOriginal(item ? item.sku || "" : "");
+        setSkuFinal(item ? item.sku || "" : "");
+        setNombre(item ? item.nombre || "" : "");
+        // si item es undefined, esto resetea (útil cuando el componente queda montado)
+    }, [item]);
+
+    const resetFormFields = () => {
+        setPrecioVenta("");
+        setPrecioCompra("");
+        setStock("");
+        setGtin("");
+        setSkuOriginal("");
+        setSkuFinal("");
+        setNombre("");
+        setSelectedCategoria(null);
+        setSelectedMarca(null);
+        setErrorMsg("");
+    }
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setErrorMsg("");
+        setLoading(true);
+
+        // Validaciones
+        if (!skuFinal.trim()) {
+            setErrorMsg("El SKU es obligatorio");
+            setLoading(false);
+            return;
+        }
+        if (!nombre.trim()) {
+            setErrorMsg("El nombre es obligatorio");
+            setLoading(false);
+            return;
         }
 
-    });
+        if (skuFinal.trim().length <= 2) {
+            setErrorMsg("El SKU debe tener un largo mínimo de 3");
+            setLoading(false);
+            return;
+        }
 
+        if (nombre.trim().length <= 2) {
+            setErrorMsg("El nombre debe tener un largo mínimo de 3");
+            setLoading(false);
+            return;
+        }
 
-    // ---------- Envío del formulario ----------
-    const onSubmit: SubmitHandler<ItemForm> = async (data) => {
-        setServerError(null); // limpiar errores anteriores
+        if (precioVenta === "" || Number(precioVenta) <= 0) {
+            setErrorMsg("El precio de venta debe ser mayor a 0");
+            setLoading(false);
+            return;
+        }
+        if (precioCompra === "" || Number(precioCompra) <= 0) {
+            setErrorMsg("El precio de compra debe ser mayor a 0");
+            setLoading(false);
+            return;
+        }
+        if (stock === "" || Number(stock) < 0) {
+            setErrorMsg("El stock debe ser 0 o mayor");
+            setLoading(false);
+            return;
+        }
+        if (!selectedCategoria) {
+            setErrorMsg("Debes seleccionar una categoría");
+            setLoading(false);
+            return;
+        }
+        if (!selectedMarca) {
+            setErrorMsg("Debes seleccionar una marca");
+            setLoading(false);
+            return;
+        }
+
         try {
-            const res = await fetch(`/api/productos${item ? "/" + item.sku : ""}`, {
-                method: item ? "PUT" : "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    sku: data.sku,
-                    gtin: data.gtin,
-                    nombre: data.nombre,
-                    precio_venta: data.precioVenta,
-                    precio_compra: data.precioCompra,
-                    stock: data.stock,
-                    id_categoria: data.categoria?.id,
-                    id_marca: data.marca?.id,
-                }),
+            const payload = {
+                sku: skuFinal.trim(),
+                gtin: gtin.trim() || null,
+                nombre: nombre.trim(),
+                precio_venta: Number(precioVenta),
+                precio_compra: Number(precioCompra),
+                stock: Number(stock),
+                id_categoria: Number(selectedCategoria.id_categoria),
+                id_marca: Number(selectedMarca.id_marca)
+            };
 
+            const method = item ? "PUT" : "POST";
+            const url = item ? `/api/productos/${skuOriginal}` : `/api/productos`;
+
+            const res = await fetch(url, {
+                method,
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
             });
 
             if (!res.ok) {
-                const err = await res.json().catch(() => ({}));
-                setServerError(err.error || "Error al crear el producto. Intenta nuevamente.");
+                const errorData = await res.json();
+                console.log(errorData)
+                setErrorMsg("Error al guardar el producto: " + (errorData.error || JSON.stringify(errorData.error)));
                 return;
             }
-            window.location.reload();
-            reset();
-        } catch (error) {
-            console.error("Error en la solicitud:", error);
-            setServerError("Error de conexión con el servidor. Verifica tu red.");
+
+            Toastify({
+                text: item ? "Producto Actualizado Correctamente" : "Producto Creado Correctamente",
+                gravity: "bottom",
+                position: "right",
+                duration: 3000
+
+            }).showToast();
+
+            // Si es creación (no viene item), reseteo los campos para el siguiente uso
+            if (!item) {
+                resetFormFields();
+            }
+
+            if (onSuccess) onSuccess();
+
+        } catch {
+            setErrorMsg("No se pudo conectar con el servidor");
+        } finally {
+            setLoading(false);
         }
     };
 
 
-
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                // Traer categorías y marcas
-                const [catRes, marRes] = await Promise.all([
-                    fetch("/api/categorias").then(r => r.json()),
-                    fetch("/api/marcas").then(r => r.json()),
-                ]);
-                setCategorias(catRes.categorias || []);
-                setMarcas(marRes.marcas || []);
-
-                // Si item existe, traer sus datos actualizados
-                if (item) {
-                    const res = await fetch(`/api/productos/${item.sku}`);
-                    if (!res.ok) throw new Error("Error al obtener el producto");
-                    const data: Producto = await res.json();
-
-                    // Setear los valores del formulario con reset
-                    reset({
-                        sku: data.sku,
-                        gtin: data.gtin,
-                        nombre: data.nombre,
-                        precioVenta: data.precio_venta,
-                        precioCompra: data.precio_compra,
-                        stock: data.stock,
-                        categoria: data.categoria
-                            ? {
-                                id: data.categoria.id_categoria,
-                                label: data.categoria.nombre_categoria
-                            }
-                            : null,
-                        marca: data.marca
-                            ? { id: data.marca.id_marca, label: data.marca.nombre_marca }
-                            : null,
-                    });
-
-                }
-            } catch (error) {
-                console.error(error);
-                setCategorias([]);
-                setMarcas([]);
-            }
-        };
-
-        fetchData();
-    }, [item, reset]);
-
-
-    // ---------- Render ----------
     return (
-        <div>
-            <h3 className="text-2xl font-semibold mb-4">Producto</h3>
-
-            <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4">
-                {/* SKU */}
-                <Controller
-                    name="sku"
-                    control={control}
-                    render={({ field }) => (
-                        <TextField
-                            {...field}
-                            label="SKU"
-                            variant="outlined"
-                            error={!!errors.sku}
-                            helperText={errors.sku?.message}
-                            fullWidth
-                            disabled={item ? true : false}
-                        />
-                    )}
-                />
-
-                {/* Nombre */}
-                <Controller
-                    name="nombre"
-                    control={control}
-                    render={({ field }) => (
-                        <TextField
-                            {...field}
-                            label="Nombre"
-                            variant="outlined"
-                            error={!!errors.nombre}
-                            helperText={errors.nombre?.message}
-                            fullWidth
-                        />
-                    )}
-                />
-
-                {/* Precio Venta / Compra */}
-                <div className="grid md:grid-cols-2 gap-4">
-                    <Controller
-                        name="precioVenta"
-                        control={control}
-                        render={({ field }) => (
-                            <TextField
-                                {...field}
-                                type="number"
-                                label="Precio de Venta"
-                                variant="outlined"
-                                error={!!errors.precioVenta}
-                                helperText={errors.precioVenta?.message}
-                                fullWidth
-                                value={field.value ?? ""}
-                                onChange={(e) => field.onChange(e.target.value)}
-                            />
-                        )}
-                    />
-
-                    <Controller
-                        name="precioCompra"
-                        control={control}
-                        render={({ field }) => (
-                            <TextField
-                                {...field}
-                                type="number"
-                                label="Precio de Compra"
-                                variant="outlined"
-                                error={!!errors.precioCompra}
-                                helperText={errors.precioCompra?.message}
-                                fullWidth
-                                value={field.value ?? ""}
-                                onChange={(e) => field.onChange(e.target.value)}
-                            />
-                        )}
+        <form onSubmit={handleSubmit} className="h-min py-5">
+            <div className="grid gap-y-5">
+                <div>
+                    <TextField
+                        fullWidth
+                        label="SKU"
+                        value={skuFinal}
+                        onChange={(e) => setSkuFinal(e.target.value)}
+                        variant="outlined"
                     />
                 </div>
 
-                {/* Stock */}
-                <Controller
-                    name="stock"
-                    control={control}
-                    render={({ field }) => (
-                        <TextField
-                            {...field}
-                            type="number"
+                <div>
+                    <TextField
+                        fullWidth
+                        label="Nombre de Producto"
+                        value={nombre}
+                        onChange={(e) => setNombre(e.target.value)}
+                        variant="outlined"
+                    />
+                </div>
+
+                <div className="grid md:grid-cols-2 md:gap-x-5 gap-y-5">
+                    <div className="w-full">
+                        <NumberField
+                            label="Precio Venta"
+                            min={0}
+                            value={Number(precioVenta)}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                                setPrecioVenta(parseNumber(e.target.value));
+                            }}
+                            error=""
+                        />
+                    </div>
+
+                    <div className="w-full">
+                        <NumberField
+                            label="Precio Compra"
+                            min={0}
+                            value={Number(precioCompra)}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                                setPrecioCompra(parseNumber(e.target.value));
+                            }}
+                            error=""
+                        />
+                    </div>
+                </div>
+
+                <div className="grid md:grid-cols-2 md:gap-x-5 gap-y-5">
+                    <div>
+                        <Autocomplete
+                            disablePortal
+                            options={categorias}
+                            value={selectedCategoria}
+                            onChange={(_, v) => setSelectedCategoria(v)}
+                            getOptionLabel={(option) => option.nombre_categoria || ""}
+                            renderInput={(params) => (
+                                <TextField {...params} label="Categorías" />
+                            )}
+                        />
+                    </div>
+
+                    <div>
+                        <Autocomplete
+                            disablePortal
+                            options={marcas}
+                            value={selectedMarca}
+                            onChange={(_, v) => setSelectedMarca(v)}
+                            getOptionLabel={(option) => option.nombre_marca || ""}
+                            renderInput={(params) => (
+                                <TextField {...params} label="Marcas" />
+                            )}
+                        />
+                    </div>
+
+                    <div className="md:col-span-2 w-full">
+                        <NumberField
                             label="Stock"
-                            variant="outlined"
-                            error={!!errors.stock}
-                            helperText={errors.stock?.message}
-                            fullWidth
-                            value={field.value ?? ""}
-                            onChange={(e) => field.onChange(e.target.value)}
+                            min={0}
+                            value={Number(stock)}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                                setStock(parseNumber(e.target.value));
+                            }}
+                            error=""
                         />
-                    )}
-                />
-
-                {/* Stock */}
-                <Controller
-                    name="gtin"
-                    control={control}
-                    render={({ field }) => (
+                    </div>
+                    <div className="md:col-span-2 w-full">
                         <TextField
-                            {...field}
-                            type="number"
-                            label="Stock"
-                            variant="outlined"
-                            error={!!errors.stock}
-                            helperText={errors.stock?.message}
                             fullWidth
-                            value={field.value ?? ""}
-                            onChange={(e) => field.onChange(e.target.value)}
+                            label="GTIN (opcional)"
+                            value={gtin}
+                            onChange={(e) => setGtin(e.target.value)}
+                            variant="outlined"
                         />
-                    )}
-                />
-
-                {/* Categoría / Marca */}
-                <div className="grid md:grid-cols-2 gap-4">
-                    <Controller
-                        name="categoria"
-                        control={control}
-                        render={({ field }) => {
-                            const options = categorias.map(c => ({
-                                label: c.nombre_categoria,
-                                id: c.id_categoria,
-                            }));
-
-                            const selectedOption = options.find(o => o.id === field.value?.id) || null;
-
-                            return (
-                                <Autocomplete
-                                    disablePortal
-                                    options={options}
-                                    value={selectedOption}
-                                    onChange={(_, val) => field.onChange(val)}
-                                    isOptionEqualToValue={(opt, val) => opt.id === val.id}
-                                    getOptionLabel={(opt) => opt.label}
-                                    renderInput={(params) => (
-                                        <TextField
-                                            {...params}
-                                            label="Categoría"
-                                            error={!!errors.categoria}
-                                            helperText={errors.categoria?.message}
-                                        />
-                                    )}
-                                />
-                            );
-                        }}
-                    />
-
-
-                    <Controller
-                        name="marca"
-                        control={control}
-                        render={({ field }) => {
-                            const options = marcas.map(m => ({
-                                label: m.nombre_marca,
-                                id: m.id_marca,
-                            }));
-
-                            const selectedOption = options.find(o => o.id === field.value?.id) || null;
-
-                            return (
-                                <Autocomplete
-                                    disablePortal
-                                    options={options}
-                                    value={selectedOption}
-                                    onChange={(_, val) => field.onChange(val)}
-                                    isOptionEqualToValue={(opt, val) => opt.id === val.id}
-                                    getOptionLabel={(opt) => opt.label}
-                                    renderInput={(params) => (
-                                        <TextField
-                                            {...params}
-                                            label="Marca"
-                                            error={!!errors.marca}
-                                            helperText={errors.marca?.message}
-                                        />
-                                    )}
-                                />
-                            );
-                        }}
-                    />
-
+                    </div>
                 </div>
-                {/* Botón */}
-                <div className="flex flex-col items-center pt-3">
-                    <Button type="submit" variant="contained">
-                        {item ? "Actualizar Producto" : "Crear Producto"}
-                    </Button>
 
-                    {/* Error externo */}
-                    <p className="text-red-500 mt-1">
-                        {serverError || "ㅤ"}
-                    </p>
-                </div>
-            </form>
-        </div>
+                {errorMsg && (
+                    <p className="text-red-600 text-sm">{errorMsg}</p>
+                )}
+
+                <Button
+                    type="submit"
+                    variant="contained"
+                    fullWidth
+                    disabled={loading}
+                >
+                    {loading ? "Guardando..." : "Guardar Producto"}
+                </Button>
+            </div>
+        </form>
     );
 }

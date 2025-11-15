@@ -1,88 +1,102 @@
-"use client";
+import { TextField, Button } from "@mui/material";
+import { useEffect, useState } from "react";
+import Toastify from 'toastify-js';
 
-import { Button, TextField } from "@mui/material";
-import { useState } from "react";
-import { useForm, Controller, SubmitHandler } from "react-hook-form";
-import { z } from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
+export default function ProductoForm({ item, onSuccess }: { item?: Marca, onSuccess?: () => void }) {
+    const [marcaNombre, setMarcaNombre] = useState<string>(item?.nombre_marca || "");
+    const [loading, setLoading] = useState(false);
+    const [errorMsg, setErrorMsg] = useState("");
 
-// ---------- Esquema de validación ----------
-const marcaSchema = z.object({
-    nombre: z.string().trim().min(1, "El nombre de la marca es obligatorio"),
-});
+    const resetFormFields = () => {
+        setMarcaNombre("");
+        setErrorMsg("");
+    }
 
-type MarcaFormType = z.infer<typeof marcaSchema>;
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setErrorMsg("");
+        setLoading(true);
 
-// ---------- Formulario ----------
-export default function MarcaForm({ item }: { item?: { nombre_marca: string, id_marca : number } }) {
-    const [serverError, setServerError] = useState<string | null>(null);
+        // Validación simple
+        if (!marcaNombre.trim()) {
+            setErrorMsg("El nombre de la marca es obligatorio");
+            setLoading(false);
+            return;
+        }
 
-    const { control, handleSubmit, formState: { errors }, reset } = useForm<MarcaFormType>({
-        resolver: zodResolver(marcaSchema),
-        defaultValues: {
-            nombre: item?.nombre_marca || "",
-        },
-    });
-
-    const onSubmit: SubmitHandler<MarcaFormType> = async (data) => {
-        setServerError(null);
+        if (marcaNombre.trim().length <= 3) {
+            setErrorMsg("El nombre de la marca debe tener al menos 4 caracteres");
+            setLoading(false);
+            return;
+        }
 
         try {
-            console.log(data)
-            const res = await fetch(`/api/marcas${item ? "/" + item?.id_marca : ""}`, {
-                method: item ? "PUT" : "POST",
+            const payload = {
+                nombre_marca: marcaNombre.trim()
+            };
+
+            const method = item ? "PUT" : "POST";
+            const url = item ? `/api/marcas/${item.id_marca}` : `/api/marcas`;
+
+            const res = await fetch(url, {
+                method,
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    nombre_marca: data.nombre
-                }),
+                body: JSON.stringify(payload)
             });
 
             if (!res.ok) {
-                const err = await res.json().catch(() => ({}));
-                setServerError(err.error || "Error al guardar la marca. Intenta nuevamente.");
+                const errorData = await res.json();
+                setErrorMsg("Error al guardar la marca: " + (errorData.error || JSON.stringify(errorData.error)));
                 return;
             }
 
-            reset();
-            window.location.reload();
-        } catch (error) {
-            console.error("Error en la solicitud:", error);
-            setServerError("Error de conexión con el servidor.");
+            Toastify({
+                text: item ? "Marca Actualizada Correctamente" : "Marca Creada Correctamente",
+                gravity: "bottom",
+                position: "right",
+                duration: 3000
+            }).showToast();
+
+            // Reseteo si es creación
+            if (!item) {
+                resetFormFields();
+            }
+
+            if (onSuccess) onSuccess();
+
+        } catch {
+            setErrorMsg("No se pudo conectar con el servidor");
+        } finally {
+            setLoading(false);
         }
     };
 
     return (
-        <div>
-            <h3 className="text-2xl font-semibold mb-4">
-                {item ? "Editar Marca" : "Nueva Marca"}
-            </h3>
-
-            <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4">
-                <Controller
-                    name="nombre"
-                    control={control}
-                    render={({ field }) => (
-                        <TextField
-                            {...field}
-                            label="Nombre de la Marca"
-                            variant="outlined"
-                            error={!!errors.nombre}
-                            helperText={errors.nombre?.message}
-                            fullWidth
-                        />
-                    )}
-                />
-
-                <div className="flex flex-col items-center pt-3">
-                    <Button type="submit" variant="contained">
-                        {item ? "Actualizar" : "Crear"}
-                    </Button>
-
-                    <p className="text-red-500 mt-1">
-                        {serverError || "ㅤ"}
-                    </p>
+        <form onSubmit={handleSubmit} className="h-120 max py-5">
+            <div className="grid gap-y-5">
+                <div>
+                    <TextField
+                        fullWidth
+                        label="Nombre de la marca"
+                        value={marcaNombre}
+                        onChange={(e) => setMarcaNombre(e.target.value)}
+                        variant="outlined"
+                    />
                 </div>
-            </form>
-        </div>
+
+                {errorMsg && (
+                    <p className="text-red-600 text-sm">{errorMsg}</p>
+                )}
+
+                <Button
+                    type="submit"
+                    variant="contained"
+                    fullWidth
+                    disabled={loading}
+                >
+                    {loading ? "Guardando..." : "Guardar Marca"}
+                </Button>
+            </div>
+        </form>
     );
 }

@@ -1,5 +1,47 @@
 import { NextResponse } from "next/server";
 import db from "@/lib/pg";
+import { z } from "zod";
+
+export const productoSchema = z.object({
+    sku: z
+        .string()
+        .trim()
+        .min(3, "SKU debe tener al menos 3 caracteres"),
+
+    gtin: z
+        .string()
+        .trim()
+        .min(3, "GTIN debe tener al menos 3 caracteres")
+        .optional()
+        .nullable(),
+
+    nombre: z
+        .string()
+        .trim()
+        .min(3, "El nombre debe tener al menos 3 caracteres"),
+
+    id_categoria: z
+        .number()
+        .int("La categoría debe ser un número entero"),
+
+    id_marca: z
+        .number()
+        .int("La marca debe ser un número entero"),
+
+    precio_venta: z
+        .number()
+        .nonnegative("El precio de venta no puede ser negativo"),
+
+    precio_compra: z
+        .number()
+        .nonnegative("El precio de compra no puede ser negativo"),
+
+    stock: z
+        .number()
+        .int("El stock debe ser un número entero")
+        .nonnegative("El stock no puede ser negativo")
+        .optional()
+});
 
 export async function GET() {
     try {
@@ -68,13 +110,44 @@ export async function POST(request: Request) {
             stock
         } = await request.json();
 
-        const skuTrim = sku?.trim(); // trim agregado
-        const nombreTrim = nombre?.trim(); // trim agregado
-        const gtinTrim = gtin?.trim() || null; // trim agregado
+        const parsed = productoSchema.safeParse({
+            sku,
+            gtin,
+            nombre,
+            id_categoria,
+            id_marca,
+            precio_venta,
+            precio_compra,
+            stock
+        });
 
-        if (!skuTrim || !nombreTrim || !id_categoria || !id_marca || precio_venta == null || precio_compra == null) {
+        if (!parsed.success) {
             return NextResponse.json(
-                { error: "Faltan campos obligatorios" },
+                { error: "Datos inválidos", detalles: parsed.error.flatten() },
+                { status: 400 }
+            );
+        }
+
+        const catExists = await db.query(
+            'SELECT 1 FROM tipo_categoria WHERE id_categoria = $1',
+            [id_categoria]
+        );
+
+        if (catExists.rowCount === 0) {
+            return NextResponse.json(
+                { error: "La categoría no existe" },
+                { status: 400 }
+            );
+        }
+
+        const marcaExists = await db.query(
+            'SELECT 1 FROM marca WHERE id_marca = $1',
+            [id_marca]
+        );
+
+        if (marcaExists.rowCount === 0) {
+            return NextResponse.json(
+                { error: "La marca no existe" },
                 { status: 400 }
             );
         }
@@ -89,9 +162,9 @@ export async function POST(request: Request) {
         `;
 
         const insertValues = [
-            skuTrim,
-            gtinTrim,
-            nombreTrim,
+            sku,
+            gtin,
+            nombre,
             id_categoria,
             id_marca,
             precio_venta,
@@ -122,7 +195,7 @@ export async function POST(request: Request) {
             WHERE p.sku = $1
         `;
 
-        const result = await db.query(selectQuery, [skuTrim]);
+        const result = await db.query(selectQuery, [sku]);
 
         const row = result.rows[0];
 

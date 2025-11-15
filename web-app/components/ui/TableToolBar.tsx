@@ -7,7 +7,7 @@ import FilterListIcon from '@mui/icons-material/FilterList';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import MenuItem from '@mui/material/MenuItem';
 import Divider from '@mui/material/Divider';
-import { useRef, useState } from 'react';
+import { useRef, useState, cloneElement, isValidElement } from 'react';
 import DeleteIcon from '@mui/icons-material/Delete';
 import OpenPopUp from '../forms/DeleteConfirmUser';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
@@ -19,7 +19,7 @@ interface TableToolbarProps {
     title: string;
     formulario?: React.ReactNode;
     url: string;
-    deletionKey : string;
+    deletionKey: string;
 }
 
 export default function TableToolbar({
@@ -33,10 +33,21 @@ export default function TableToolbar({
     const [exportMenuOpen, setExportMenuOpen] = useState(false);
     const exportMenuTriggerRef = useRef<HTMLButtonElement>(null);
 
+    // Si se recibió un formulario (React element), lo clonamos e inyectamos onSuccess
+    let formularioConOnSuccess: React.ReactNode = formulario;
+    if (isValidElement(formulario)) {
+        formularioConOnSuccess = cloneElement(formulario as React.ReactElement<any>, {
+            item: undefined, // for new item creation ensure item is undefined
+            onSuccess: () => {
+                handleUpdate();
+            }
+        });
+    }
+
     return (
         <Toolbar>
             <div className='mr-auto ml-2'>
-                <BodegaNewItemButton title={title} children={formulario}></BodegaNewItemButton>
+                <BodegaNewItemButton title={title} children={formularioConOnSuccess}></BodegaNewItemButton>
             </div>
             <Tooltip title="Borrar">
                 <span>
@@ -47,7 +58,7 @@ export default function TableToolbar({
                         aria-haspopup="true"
                         disabled={rowsSelected.length === 0}
                         aria-expanded={exportMenuOpen ? 'true' : undefined}
-                        onClick={() => OpenPopUp(rowsSelected, url, title, deletionKey ,handleUpdate )}
+                        onClick={() => OpenPopUp(rowsSelected, url, title, deletionKey, handleUpdate)}
                     >
                         <DeleteIcon fontSize='small' color={rowsSelected.length === 0 ? 'disabled' : 'error'}></DeleteIcon>
                     </ToolbarButton>

@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import bcrypt from 'bcrypt';
 import db from "@/lib/pg";
-import UsuarioType from "@/types/db"
 
 // --- FUNCIÓN DE VALIDACIÓN (Igual que antes) ---
 function validateUserInput(data: Partial<UsuarioType>, isCreate = true) {
@@ -67,7 +66,7 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
     try {
         const body = await req.json();
-        const { nombre, email, password, id_tipo = 1 } = body;
+        const { nombre, email, password, id_tipo = 2 } = body;
 
         // 1. Validaciones
         const errors = validateUserInput({ nombre, email, password }, true);

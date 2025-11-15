@@ -1,11 +1,11 @@
 interface Categoria {
-    id_categoria : number;
-    nombre_categoria : string;
+    id_categoria: number;
+    nombre_categoria: string;
 }
 
 interface Marca {
-    id_marca : number;
-    nombre_marca : string;
+    id_marca: number;
+    nombre_marca: string;
 }
 
 interface Producto {
@@ -17,4 +17,22 @@ interface Producto {
     stock: number
     categoria: Categoria,
     marca: Marca
+}
+
+interface UsuarioType {
+    id_usuario: number;
+    nombre: string;
+    email: string;
+    password?: string;
+    activo: boolean;
+    id_tipo: number;
+    created_at?: Date;
+}
+
+interface DetalleRow {
+    sku: string;
+    producto: string;
+    precio: number;
+    cantidad: number;
+    total: number;
 }

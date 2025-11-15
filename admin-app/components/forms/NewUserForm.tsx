@@ -59,8 +59,8 @@ export default function CreateUserModal({ open, onClose, onCreate }: Props) {
                     nombre: formData.nombre,
                     email: formData.email,
                     password: formData.password,
-                    // 2. CORRECCIÓN: 'idTipo' (camelCase) para coincidir con la API
-                    idTipo: roleMap[formData.rol] || 2,
+                    // Enviar `id_tipo` (snake_case) para coincidir con la API
+                    id_tipo: roleMap[formData.rol] ?? roleMap['Vendedor'],
                     activo: true // La API siempre lo crea como 'activo'
                 }),
             });
@@ -72,9 +72,8 @@ export default function CreateUserModal({ open, onClose, onCreate }: Props) {
             }
 
             if (data.success) {
-                // 3. CORRECCIÓN: 'idUsuario' (camelCase) para coincidir con la API
                 const newUserForTable: User = {
-                    id: data.user.idUsuario,
+                    id: data.user.id_usuario,
                     nombre: data.user.nombre,
                     email: data.user.email,
                     rol: formData.rol as any,

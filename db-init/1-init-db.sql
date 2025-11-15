@@ -45,8 +45,8 @@ CREATE TABLE producto (
     nombre VARCHAR(255) NOT NULL,
     id_categoria INT NOT NULL,
     id_marca INT NOT NULL,
-    precio_venta DECIMAL(10, 2) NOT NULL CHECK (precio_venta >= 0),
-    precio_compra DECIMAL(10, 2) NOT NULL CHECK (precio_compra >= 0),
+    precio_venta INT NOT NULL CHECK (precio_venta >= 0),
+    precio_compra INT NOT NULL CHECK (precio_compra >= 0),
     stock INT NOT NULL DEFAULT 0 CHECK (stock >= 0),
     CONSTRAINT fk_categoria FOREIGN KEY(id_categoria) REFERENCES tipo_categoria(id_categoria),
     CONSTRAINT fk_marca FOREIGN KEY(id_marca) REFERENCES marca(id_marca)

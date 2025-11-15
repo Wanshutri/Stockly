@@ -33,7 +33,7 @@ const StocklyIcon = (props: React.SVGProps<SVGSVGElement>) => (
     xmlns="http://www.w3.org/2000/svg"
     fill="none"
     viewBox="0 0 24 24"
-    strokeWidth={2} // Un poco más grueso para el logo
+    strokeWidth={2}
     stroke="currentColor"
     {...props}
   >
@@ -67,8 +67,6 @@ export default function DrawerAppBar(props: Props) {
   const [mounted, setMounted] = useState(false);
   const { user } = useUser();
 
-  // --- ¡CORRECCIÓN AQUÍ! ---
-  // Se llama a getNavItems sin argumentos, ya que no depende del rol del usuario
   const navItems = useMemo(() => getNavItems(), []);
 
   useEffect(() => {
@@ -197,25 +195,19 @@ export default function DrawerAppBar(props: Props) {
             }}
           >
             <Link href="/" className="text-decoration-none" style={{ display: 'flex', alignItems: 'center' }}>
-              {/* 1. Vuelve el logo de Stockly */}
-              <StocklyIcon
-                width={30}
-                height={30}
-                style={{ color: "var(--color-primario, #1976D2)", marginRight: '12px' }}
-              />
-              {/* 2. Nombre de la App */}
+              {/* Nombre de la App */}
               <Typography
                 variant="h6"
                 component="div"
                 sx={{
-                  color: "var(--color-primario, #1976D2)", // Mantenemos el azul de la marca
+                  color: "var(--color-primario, #1976D2)",
                   fontWeight: "bold",
                   fontSize: { sm: "2rem", xs: "1.5rem" },
                 }}
               >
                 Stockly
               </Typography>
-              {/* 3. "Tag" de Admin sutil */}
+              {/* Tag de Admin */}
               <Box sx={{
                 ml: 2,
                 bgcolor: 'grey.200',
@@ -225,7 +217,7 @@ export default function DrawerAppBar(props: Props) {
                 borderRadius: '16px',
                 fontSize: '0.75rem',
                 fontWeight: 600,
-                display: { xs: 'none', sm: 'block' } // Oculto en móviles
+                display: { xs: 'none', sm: 'block' } 
               }}>
                 Admin
               </Box>

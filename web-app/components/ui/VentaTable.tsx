@@ -10,11 +10,23 @@ const currencyFormatter = (currency: string) =>
   })
 
 export type LineItem = {
-  id: string | number
+  id: string
   sku: string
   name: string
   price: number
   qty: number
+  // Campos completos del producto
+  gtin?: string
+  precio_compra?: number
+  stock?: number
+  categoria?: {
+    id_categoria: number
+    nombre_categoria: string
+  }
+  marca?: {
+    id_marca: number
+    nombre_marca: string
+  }
 }
 
 export type POSTableProps = {

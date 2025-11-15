@@ -10,12 +10,23 @@ const currencyFormatter = new Intl.NumberFormat("es-CL", {
 /*************************
  * 2) SearchProductCard (Botón/Panel "Buscar producto")
  *************************/
-export type SearchProductResult = {
-  sku: string;
-  name: string;
-  price: number;
-  stock: number;
-};
+export interface SearchProductResult {
+  sku: string
+  name: string
+  price: number
+  stock: number
+  // Campos adicionales para guardar en el carrito
+  gtin?: string
+  precio_compra?: number
+  categoria?: {
+    id_categoria: number
+    nombre_categoria: string
+  }
+  marca?: {
+    id_marca: number
+    nombre_marca: string
+  }
+}
 
 export type SearchProductCardProps = {
   placeholder?: string;
