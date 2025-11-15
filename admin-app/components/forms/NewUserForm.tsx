@@ -10,7 +10,16 @@ import DialogContentText from '@mui/material/DialogContentText';
 import MenuItem from '@mui/material/MenuItem';
 import CircularProgress from '@mui/material/CircularProgress';
 import Alert from '@mui/material/Alert';
-import { User } from '../definitions/User';
+
+// Asumimos que la definición de User (para la UI/tabla) es algo así:
+// Esta NO es la 'UsuarioType' de la base de datos.
+export interface User {
+    id: number;
+    nombre: string;
+    email: string;
+    rol: 'Admin' | 'Vendedor' | 'Bodeguero';
+    estado: 'Activo' | 'Inactivo';
+}
 
 interface Props {
     open: boolean;
@@ -19,7 +28,8 @@ interface Props {
 }
 
 export default function CreateUserModal({ open, onClose, onCreate }: Props) {
-    const initialFormState = { nombre: '', email: '', rol: 'Vendedor', estado: 'Activo', password: '' };
+    // 1. Estado inicial actualizado (sin 'estado')
+    const initialFormState = { nombre: '', email: '', rol: 'Vendedor', password: '' };
     const [formData, setFormData] = useState(initialFormState);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
@@ -34,12 +44,11 @@ export default function CreateUserModal({ open, onClose, onCreate }: Props) {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
-    // --- CONEXIÓN CON TU API (POST) ---
     const handleSubmit = async () => {
         setLoading(true);
         setError('');
 
-        // 1. Mapeo de roles de UI a IDs de tu DB (AJUSTA ESTOS NÚMEROS SEGÚN TU DB)
+        // Mapeo de roles de UI a IDs de tu DB
         const roleMap: { [key: string]: number } = { 'Admin': 1, 'Vendedor': 2, 'Bodeguero': 3 };
 
         try {
@@ -50,8 +59,9 @@ export default function CreateUserModal({ open, onClose, onCreate }: Props) {
                     nombre: formData.nombre,
                     email: formData.email,
                     password: formData.password,
-                    id_tipo: roleMap[formData.rol] || 2, // Default a Vendedor si falla
-                    activo: true // Al crear siempre lo ponemos activo por defecto
+                    // 2. CORRECCIÓN: 'idTipo' (camelCase) para coincidir con la API
+                    idTipo: roleMap[formData.rol] || 2,
+                    activo: true // La API siempre lo crea como 'activo'
                 }),
             });
 
@@ -62,14 +72,13 @@ export default function CreateUserModal({ open, onClose, onCreate }: Props) {
             }
 
             if (data.success) {
-                // 2. Convertir la respuesta de la DB al formato de tu tabla UI
-                // Tu API devuelve: { id_usuario, nombre, email, id_tipo, activo, ... }
+                // 3. CORRECCIÓN: 'idUsuario' (camelCase) para coincidir con la API
                 const newUserForTable: User = {
-                    id: data.user.id_usuario,
+                    id: data.user.idUsuario,
                     nombre: data.user.nombre,
                     email: data.user.email,
-                    rol: formData.rol as any, // Mantenemos el rol que seleccionó en UI
-                    estado: 'Activo'
+                    rol: formData.rol as any,
+                    estado: 'Activo' // Lo definimos como Activo en la UI
                 };
                 onCreate(newUserForTable);
                 handleClose();
@@ -87,7 +96,7 @@ export default function CreateUserModal({ open, onClose, onCreate }: Props) {
             <DialogTitle sx={{ fontWeight: 'bold', pb: 1, color: '#2563eb' }}>Nuevo Usuario</DialogTitle>
             <DialogContent>
                 <DialogContentText sx={{ mb: 3 }}>Ingrese los datos para registrar un nuevo miembro en el sistema.</DialogContentText>
-                
+
                 {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
 
                 <div className="flex flex-col gap-4">
@@ -97,28 +106,26 @@ export default function CreateUserModal({ open, onClose, onCreate }: Props) {
                         <TextField select label="Rol" name="rol" fullWidth value={formData.rol} onChange={handleChange} disabled={loading}>
                             {['Admin', 'Vendedor', 'Bodeguero'].map((r) => <MenuItem key={r} value={r}>{r}</MenuItem>)}
                         </TextField>
-                        <TextField select label="Estado" name="estado" fullWidth value={formData.estado} onChange={handleChange} disabled={loading}>
-                             <MenuItem value="Activo">Activo</MenuItem><MenuItem value="Inactivo">Inactivo</MenuItem>
-                        </TextField>
+                        {/* 4. CAMPO "ESTADO" ELIMINADO */}
                     </div>
-                    <TextField 
-                        label="Contraseña" 
-                        name="password" 
-                        type="password" 
-                        fullWidth 
-                        value={formData.password} 
-                        onChange={handleChange} 
-                        disabled={loading} 
+                    <TextField
+                        label="Contraseña"
+                        name="password"
+                        type="password"
+                        fullWidth
+                        value={formData.password}
+                        onChange={handleChange}
+                        disabled={loading}
                         helperText="Mínimo 6 caracteres"
                     />
                 </div>
             </DialogContent>
             <DialogActions sx={{ px: 3, pb: 3 }}>
                 <Button onClick={handleClose} sx={{ color: 'gray' }} disabled={loading}>Cancelar</Button>
-                <Button 
-                    onClick={handleSubmit} 
-                    variant="contained" 
-                    color="success" 
+                <Button
+                    onClick={handleSubmit}
+                    variant="contained"
+                    color="primary" // 5. CAMBIO: De 'success' a 'primary' (azul)
                     disabled={loading || !formData.password || formData.password.length < 6}
                     startIcon={loading ? <CircularProgress size={20} color="inherit" /> : null}
                     sx={{ fontWeight: 'bold', px: 4 }}

@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { signIn, getSession, signOut, type SignInResponse } from "next-auth/react";
+// Se eliminan 'getSession' y 'signOut' porque ya no se usan aquí
+import { signIn, type SignInResponse } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import React from "react"; 
-import Link from "next/link";
+import Link from "next/link"; 
 
 // --- Iconos ---
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings'; 
@@ -25,43 +26,34 @@ export default function LoginForm() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const router = useRouter();
+
     async function onSubmit(e: React.FormEvent) {
         e.preventDefault();
         setLoading(true);
         setError(null);
 
-        // 2. Intenta iniciar sesión
+        // 1. Intenta iniciar sesión
         const res = (await signIn("credentials", {
             redirect: false,
             email,
             password,
         })) as SignInResponse | undefined;
 
-        // 3. Manejo de error de credenciales
+        // 2. Manejo de error de credenciales
         if (res?.error) {
             setLoading(false);
-            if (res.error === "CredentialsSignin") {
+            if (res.error === "CredentialsSignin" || res.error === "default") {
                 setError("Correo electrónico o contraseña incorrectos.");
             } else {
-                setError("Ocurrió un error inesperado. Inténtalo de nuevo.");
+                setError(res.error); // Muestra el error de "Cuenta deshabilitada", etc.
             }
             return;
         }
 
-        const session = await getSession();
-        
-        const userRole = (session?.user as any)?.id_tipo; 
-
-        if (userRole === 1) {
-            // 5. ES ADMIN Redirigir al home.
-            router.push("/");
-            router.refresh();
-        } else {
-            // 6. NO ES ADMIN. Rechazar y mostrar error.
-            await signOut({ redirect: false }); // Cierra la sesión que se acaba de crear
-            setError("Acceso denegado. Esta cuenta no tiene permisos de administrador.");
-            setLoading(false);
-        }
+        // 3. ¡ÉXITO! Redirigir directamente al home.
+        // Se eliminó la validación de rol.
+        router.push("/");
+        router.refresh();
     }
 
     return (
@@ -118,6 +110,9 @@ export default function LoginForm() {
                         >
                             Contraseña
                         </label>
+                        <Link href="/auth/forgot-password" className="text-sm font-medium text-blue-600 hover:text-blue-500">
+                            ¿Olvidaste?
+                        </Link>
                     </div>
                     <div className="relative mt-2">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">

@@ -7,12 +7,9 @@ import { useState, useEffect, ReactNode, useMemo } from 'react';
 import SellIcon from '@mui/icons-material/Sell';
 import PaidIcon from '@mui/icons-material/Paid';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
-import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
-import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import { BarChart } from '@mui/x-charts/BarChart';
 import { PieChart } from '@mui/x-charts/PieChart';
 import { LineChart } from '@mui/x-charts/LineChart';
-import { ChartsTextStyle } from '@mui/x-charts/ChartsTextStyle'; // Para estilos
 
 // --- Componente de Tabla MUI X ---
 // ¡Asegúrate de tener @mui/x-data-grid instalado!
@@ -63,7 +60,7 @@ function formatCurrency(value: number): string {
 
 interface KpiCardProps {
   title: string;
-  value: string; 
+  value: string;
   subtitle?: string;
   icon: ReactNode;
   color: 'blue' | 'green' | 'purple';

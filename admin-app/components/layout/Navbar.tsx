@@ -67,6 +67,8 @@ export default function DrawerAppBar(props: Props) {
   const [mounted, setMounted] = useState(false);
   const { user } = useUser();
 
+  // --- ¡CORRECCIÓN AQUÍ! ---
+  // Se llama a getNavItems sin argumentos, ya que no depende del rol del usuario
   const navItems = useMemo(() => getNavItems(), []);
 
   useEffect(() => {
@@ -184,7 +186,7 @@ export default function DrawerAppBar(props: Props) {
           >
             <MenuIcon />
           </IconButton>
-          
+
           {/* --- TÍTULO ACTUALIZADO --- */}
           <Box
             sx={{
@@ -195,6 +197,12 @@ export default function DrawerAppBar(props: Props) {
             }}
           >
             <Link href="/" className="text-decoration-none" style={{ display: 'flex', alignItems: 'center' }}>
+              {/* 1. Vuelve el logo de Stockly */}
+              <StocklyIcon
+                width={30}
+                height={30}
+                style={{ color: "var(--color-primario, #1976D2)", marginRight: '12px' }}
+              />
               {/* 2. Nombre de la App */}
               <Typography
                 variant="h6"
@@ -222,7 +230,7 @@ export default function DrawerAppBar(props: Props) {
                 Admin
               </Box>
             </Link>
-            
+
             {/* Links de Navegación */}
             <Box sx={{ display: { xs: "none", md: "block" }, ml: 4 }}>
               <Box sx={{ display: "flex", gap: 2 }}>
@@ -248,8 +256,7 @@ export default function DrawerAppBar(props: Props) {
               </Box>
             </Box>
           </Box>
-          {/* ... (resto del código de usuario y drawer) ... */}
-          
+
           <Box sx={{ display: { xs: "none", md: "flex" }, alignItems: "center" }}>
             {user ? (
               <Navuserwrapper
@@ -263,13 +270,12 @@ export default function DrawerAppBar(props: Props) {
                     sx={{ ml: 2, textTransform: 'none', boxShadow: 'none' }}
                   >
                     Cerrar sesión
-                  </Button>
-                }
+                  </Button>}
               />
             ) : (
               <Button
                 href="/login"
-                LinkComponent={Link}
+                component={Link}
                 variant="contained"
                 sx={{ textTransform: 'none', boxShadow: 'none' }}
               >
@@ -293,8 +299,8 @@ export default function DrawerAppBar(props: Props) {
             "& .MuiDrawer-paper": { boxSizing: "border-box", width: drawerWidth },
           }}
         >
-          {drawer}
-        </Drawer>
+            {drawer}
+            </Drawer>
       </nav>
     </Box>
   );

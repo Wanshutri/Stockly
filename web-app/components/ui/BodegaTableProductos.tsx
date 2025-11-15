@@ -1,8 +1,6 @@
-"use client";
-
 import { useEffect, useState, cloneElement, isValidElement } from "react";
-import { DataGrid, GridColDef } from "@mui/x-data-grid";
-import TableToolbar from "../ui/TableToolBar";
+import { DataGrid, GridColDef, GridRowId, GridRowSelectionModel } from "@mui/x-data-grid";
+import TableToolbar from "./TableToolBar";
 import {
     Box,
     CircularProgress,
@@ -15,24 +13,23 @@ import SearchIcon from "@mui/icons-material/Search";
 
 interface GenericTableProps {
     columnsDef: GridColDef[];
-    apiUrl: string;
     formulario: React.ReactElement<any>;
-    title: string;
-    deletionKey : string;
 }
 
-export default function GenericTable({
+export default function ProductoTable({
     columnsDef,
-    apiUrl,
-    formulario,
-    title,
-    deletionKey
+    formulario
 }: GenericTableProps) {
     const [rows, setRows] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedRows, setSelectedRows] = useState<any[]>([]);
     const [open, setOpen] = useState(false);
     const [selectedItem, setSelectedItem] = useState<any | null>(null);
+
+    const [rowSelectionModel, setRowSelectionModel] = useState<GridRowSelectionModel>({
+        type: 'include',
+        ids: new Set<GridRowId>(),
+    });
 
     const handleOpen = (item: any) => {
         setSelectedItem(item);
@@ -65,88 +62,40 @@ export default function GenericTable({
         },
     ];
 
-    // helper: busca un string dentro de un objeto (profundidad DFS).
-    function extractStringFromObject(obj: any): string | null {
-        if (obj == null) return null;
-        if (typeof obj === "string") return obj;
-
-        // Prioridades de claves comunes
-        const priorityKeys = ["nombre", "nombre_marca", "nombre_categoria", "name", "title", "label"];
-
-        // Si es array, buscar dentro de sus elementos
-        if (Array.isArray(obj)) {
-            for (const el of obj) {
-                const s = extractStringFromObject(el);
-                if (s) return s;
-            }
-            return null;
-        }
-
-        // Buscar claves prioritarias en primer nivel
-        for (const key of priorityKeys) {
-            if (Object.prototype.hasOwnProperty.call(obj, key) && typeof obj[key] === "string") {
-                return obj[key];
-            }
-        }
-
-        // DFS: recorrer propiedades para encontrar cualquier string
-        for (const key of Object.keys(obj)) {
-            const val = obj[key];
-            if (typeof val === "string") return val;
-            if (typeof val === "object" && val !== null) {
-                const s = extractStringFromObject(val);
-                if (s) return s;
-            }
-        }
-
-        return null;
-    }
-
     const fetchData = async () => {
         try {
-            const res = await fetch(apiUrl);
-            if (res.status === 404) {
-                setRows([]);
-                return;
+            const res = await fetch("/api/productos");
+
+            if (!res.ok) {
+                throw new Error("Error al obtener productos");
             }
-            const data = await res.json();
 
-            const key = Object.keys(data).find((k) => Array.isArray(data[k]));
-            const items = key ? data[key] : Array.isArray(data) ? data : [];
+            const data: Producto[] = await res.json();
 
-            // Para cada item, reemplazamos las propiedades que sean objetos por su string encontrado
-            const normalized = items.map((item: any, i: number) => {
-                const copy = { ...item };
-
-                for (const prop of Object.keys(copy)) {
-                    const val = copy[prop];
-                    // solo transformar objetos planos (no null, no arrays)
-                    if (val && typeof val === "object" && !Array.isArray(val)) {
-                        const found = extractStringFromObject(val);
-                        if (found !== null) {
-                            copy[prop] = found;
-                        }
-                    }
-                }
-
+            const ps = data.map((p: Producto) => {
                 return {
-                    id: item.id ?? i + 1,
-                    ...copy,
+                    sku: p.sku,
+                    nombre: p.nombre,
+                    precio_compra: p.precio_compra,
+                    gtin: p.gtin,
+                    precio_venta: p.precio_venta,
+                    stock: p.stock,
+                    tipo_categoria: p.categoria.nombre_categoria,
+                    marca: p.marca.nombre_marca
                 };
             });
 
-            setRows(normalized);
+            setRows(ps);
         } catch (error) {
-            console.error(error);
+            console.error("Error cargando productos:", error);
         } finally {
             setLoading(false);
         }
     };
 
-
     useEffect(() => {
         fetchData();
-    }, [apiUrl]);
+    }, []); // se ejecuta una vez al montar
 
     function handleUpdate() {
         setSelectedRows([]);
@@ -166,6 +115,7 @@ export default function GenericTable({
             <div style={{ height: 600, width: "100%" }}>
                 <DataGrid
                     rows={rows}
+                    getRowId={(row) => row.sku}
                     columns={columnsWithAction}
                     checkboxSelection
                     disableRowSelectionOnClick
@@ -178,19 +128,24 @@ export default function GenericTable({
                                 rowsSelected={selectedRows}
                                 handleUpdate={handleUpdate}
                                 formulario={formulario}
-                                title={title}
-                                url={apiUrl}
-                                deletionKey={deletionKey}
+                                title={"Producto"}
+                                url={"api/productos"}
+                                deletionKey={"sku"}
                             />
                         ),
                     }}
-                    onRowSelectionModelChange={(r: any) => {
-                        const selectedIDs = r.ids
-                        const selectedRowData = rows.filter((row) => selectedIDs.has(row.id));
-                        setSelectedRows(selectedRowData)
+                    onRowSelectionModelChange={(newSelectionModel: GridRowSelectionModel) => {
+                        setRowSelectionModel(newSelectionModel);
+
+                        // Extract the IDs from the new selection model
+                        const selectedIDs = Array.from(newSelectionModel.ids || []);
+
+                        // Filter your original 'rows' data to get the complete selected row objects
+                        const selectedRows = rows.filter((row) => selectedIDs.includes(row.sku));
+
+                        setSelectedRows(selectedRows)
                     }}
                 />
-
             </div>
 
             {/* --- Modal de Detalle / Edición --- */}

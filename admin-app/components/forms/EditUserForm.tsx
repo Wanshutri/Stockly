@@ -10,7 +10,16 @@ import DialogContentText from '@mui/material/DialogContentText';
 import MenuItem from '@mui/material/MenuItem';
 import CircularProgress from '@mui/material/CircularProgress';
 import Alert from '@mui/material/Alert';
-import { User } from '../definitions/User';
+
+// Asumimos que la definición de User (para la UI/tabla) es algo así:
+// Esta NO es la 'UsuarioType' de la base de datos.
+export interface User {
+    id: number;
+    nombre: string;
+    email: string;
+    rol: 'Admin' | 'Vendedor' | 'Bodeguero';
+    estado: 'Activo' | 'Inactivo';
+}
 
 interface Props {
     open: boolean;
@@ -41,19 +50,24 @@ export default function EditUserModal({ open, onClose, userToEdit, onUpdate }: P
     const handleSubmit = async () => {
         setLoading(true);
         setError('');
-        
-        // 1. Mapeo inverso para enviar a la API
+
         const roleMap: { [key: string]: number } = { 'Admin': 1, 'Vendedor': 2, 'Bodeguero': 3 };
-        
-        // Preparamos el objeto payload solo con lo que tu API espera
+
         const payload: any = {
             nombre: formData.nombre,
-            id_tipo: roleMap[formData.rol as string] || 2,
-            activo: formData.estado === 'Activo' // Convertir string 'Activo' a boolean true
+            // --- ¡CORRECCIÓN AQUÍ! ---
+            // Tu API espera 'idTipo' (camelCase)
+            idTipo: roleMap[formData.rol as string] || 2,
+            activo: formData.estado === 'Activo'
         };
 
-        // Solo enviamos contraseña si el usuario escribió algo nuevo
         if (formData.password && formData.password.trim() !== '') {
+            // Validamos la contraseña nueva
+            if (formData.password.trim().length < 6) {
+                setError('La nueva contraseña debe tener al menos 6 caracteres.');
+                setLoading(false);
+                return;
+            }
             payload.password = formData.password;
         }
 
@@ -69,13 +83,13 @@ export default function EditUserModal({ open, onClose, userToEdit, onUpdate }: P
             if (!response.ok) throw new Error(data.error || 'Error al actualizar');
 
             if (data.success) {
-                // Actualizamos la tabla con los nuevos datos locales (para no tener que recargar todo)
-                // Eliminamos el campo password antes de enviarlo al estado global
                 const { password, ...userForTable } = formData;
                 onUpdate(userForTable as User);
+                onClose(); // Cierra el modal en éxito
             }
 
         } catch (err: any) {
+            console.error("Error en handleSubmit:", err);
             setError(err.message || 'No se pudieron guardar los cambios.');
         } finally {
             setLoading(false);
@@ -87,7 +101,7 @@ export default function EditUserModal({ open, onClose, userToEdit, onUpdate }: P
             <DialogTitle sx={{ fontWeight: 'bold', pb: 1, color: '#2563eb' }}>Editar Usuario</DialogTitle>
             <DialogContent>
                 <DialogContentText sx={{ mb: 3 }}>Modifique la información del usuario. Deje la contraseña en blanco para mantener la actual.</DialogContentText>
-                
+
                 {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
 
                 <div className="flex flex-col gap-4">
@@ -101,24 +115,25 @@ export default function EditUserModal({ open, onClose, userToEdit, onUpdate }: P
                             <MenuItem value="Activo">Activo</MenuItem><MenuItem value="Inactivo">Inactivo</MenuItem>
                         </TextField>
                     </div>
-                     <TextField 
-                        label="Nueva Contraseña (Opcional)" 
-                        name="password" 
-                        type="password" 
-                        fullWidth 
-                        value={formData.password} 
-                        onChange={handleChange} 
+                    <TextField
+                        label="Nueva Contraseña (Opcional)"
+                        name="password"
+                        type="password"
+                        fullWidth
+                        value={formData.password}
+                        onChange={handleChange}
                         disabled={loading}
                         placeholder="Dejar en blanco para no cambiar"
+                        helperText="Mínimo 6 caracteres si se modifica" // Helper text actualizado
                     />
                 </div>
             </DialogContent>
             <DialogActions sx={{ px: 3, pb: 3 }}>
                 <Button onClick={onClose} sx={{ color: 'gray' }} disabled={loading}>Cancelar</Button>
-                <Button 
-                    onClick={handleSubmit} 
-                    variant="contained" 
-                    color="primary" 
+                <Button
+                    onClick={handleSubmit}
+                    variant="contained"
+                    color="primary"
                     disabled={loading}
                     startIcon={loading ? <CircularProgress size={20} color="inherit" /> : null}
                     sx={{ fontWeight: 'bold', px: 4 }}

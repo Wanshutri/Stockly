@@ -11,14 +11,13 @@ import {
   CircularProgress 
 } from '@mui/material';
 
-// Definimos la estructura de lo que esperamos recibir
+// 1. Interfaz actualizada para usar camelCase (idUsuario)
 interface DeleteUserModalProps {
   open: boolean;
   onClose: () => void;
-  // Esta función espera recibir el ID numérico del usuario borrado
   onDeleteSuccess: (deletedId: number) => void; 
-  // Aceptamos que el usuario pueda tener la propiedad 'id' o 'id_usuario' para evitar errores
-  userToDelete: { id?: number; id_usuario?: number; nombre?: string } | null;
+  // Aceptamos varias formas de id para ser tolerantes con distintos mapeos
+  userToDelete: { id?: number; idUsuario?: number; id_usuario?: number; nombre: string; } | null;
 }
 
 export default function DeleteUserModal({ 
@@ -33,13 +32,10 @@ export default function DeleteUserModal({
   const handleDelete = async () => {
     if (!userToDelete) return;
 
-    // --- CORRECCIÓN CRÍTICA AQUÍ ---
-    // Verificamos qué propiedad tiene el ID correcto.
-    // Prisma suele usar 'id_usuario' en tu base de datos, pero a veces el frontend espera 'id'.
-    const userId = userToDelete.id_usuario || userToDelete.id;
+    // --- Detectar el ID pase por distintas claves (id, idUsuario, id_usuario) ---
+    const userId = (userToDelete as any)?.idUsuario ?? (userToDelete as any)?.id ?? (userToDelete as any)?.id_usuario;
 
-    // Validación de seguridad: Si no hay ID, no hacemos la petición
-    if (!userId) {
+    if (userId === undefined || userId === null) {
       console.error("Error: No se pudo encontrar el ID del usuario. Objeto recibido:", userToDelete);
       alert("Error: No se pudo identificar el usuario a eliminar.");
       return;
@@ -47,13 +43,12 @@ export default function DeleteUserModal({
     
     setLoading(true);
     try {
-      // Hacemos la petición pasando el ID validado
+      // Tu API espera el ID en el query param 'id'
       const response = await fetch(`/api/usuarios?id=${userId}`, {
         method: 'DELETE',
       });
 
       if (response.ok) {
-        // Avisamos al componente padre que se borró el usuario con este ID
         onDeleteSuccess(userId); 
         onClose();
       } else {

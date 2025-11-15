@@ -1,13 +1,10 @@
-import NextAuth from 'next-auth/next'
-import CredentialsProvider from 'next-auth/providers/credentials'
-import { PrismaAdapter } from '@next-auth/prisma-adapter'
-import { prisma } from '@/lib/prisma'
-import bcrypt from 'bcrypt'
-import { UsuarioType } from '@/types/db'
-import { PrismaClient } from '@prisma/client/extension'
+import NextAuth from 'next-auth/next';
+import CredentialsProvider from 'next-auth/providers/credentials';
+import bcrypt from 'bcrypt';
+import db from '../../../../lib/pg'
+import { UsuarioType } from '@/types/db'; 
 
 const authOptions = {
-    adapter: PrismaAdapter(prisma),
     providers: [
         CredentialsProvider({
             name: 'Credentials',
@@ -15,35 +12,44 @@ const authOptions = {
                 email: { label: 'Email', type: 'text' },
                 password: { label: 'Password', type: 'password' },
             },
-            async authorize(
-                credentials: Record<'email' | 'password', string> | undefined,
-                req: any
-            ) {
+            async authorize(credentials) {
                 try {
                     if (!credentials?.email || !credentials?.password) {
-                        throw new Error('Debes ingresar tu correo y contraseña')
+                        throw new Error('Debes ingresar tu correo y contraseña');
                     }
 
-                    const user: any = await (prisma as any).usuario.findUnique({
-                        where: { email: credentials.email },
-                    })
+                    const query = 'SELECT * FROM usuario WHERE email = $1';
+                    const result = await db.query(query, [credentials.email]);
 
-                    if (!user) throw new Error('El usuario no existe')
-                    if (!user.password) throw new Error('Cuenta inválida (sin contraseña)')
+                    if (result.rows.length === 0) {
+                        throw new Error('El usuario no existe');
+                    }
 
-                    const valid = await bcrypt.compare(credentials.password, user.password)
-                    if (!valid) throw new Error('Contraseña incorrecta')
-                    if (!user.activo) throw new Error('Cuenta deshabilitada.')
+                    const user = result.rows[0] as UsuarioType;
 
-                    return { 
+                    if (!user.password) {
+                        throw new Error('Cuenta inválida (sin contraseña)');
+                    }
+
+                    const valid = await bcrypt.compare(credentials.password, user.password);
+                    
+                    if (!valid) {
+                        throw new Error('Contraseña incorrecta');
+                    }
+
+                    if (!user.activo) {
+                        throw new Error('Cuenta deshabilitada, contacte a su administrador.');
+                    }
+
+                    return {
                         id: String(user.id_usuario),
                         name: user.nombre,
                         email: user.email,
                         id_tipo: user.id_tipo
-                    }
+                    };
 
                 } catch (err: any) {
-                    throw new Error(err.message || 'Error al iniciar sesión')
+                    throw new Error(err.message || 'Error al iniciar sesión');
                 }
             },
         }),
@@ -54,22 +60,22 @@ const authOptions = {
     callbacks: {
         async jwt({ token, user }: any) {
             if (user) {
-                token.id = user.id
-                token.id_tipo = user.id_tipo
+                token.id = user.id;
+                token.id_tipo = user.id_tipo;
             }
-            return token
+            return token;
         },
         async session({ session, token }: any) {
             if (session.user) {
-                session.user.id = token.id as string
-                session.user.id_tipo = token.id_tipo
+                session.user.id = token.id as string;
+                session.user.id_tipo = token.id_tipo as number;
             }
-            return session
+            return session;
         },
     },
-}
+};
 
-const handler = NextAuth(authOptions as any)
+const handler = NextAuth(authOptions as any);
 
-export { authOptions }
-export { handler as GET, handler as POST }
+export { authOptions };
+export { handler as GET, handler as POST };

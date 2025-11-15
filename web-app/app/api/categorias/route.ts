@@ -1,139 +1,117 @@
-import { NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
-import { Prisma } from '@prisma/client'
-import type { TipoCategoriaType } from '@/types/db'
+import { NextResponse } from "next/server";
+import db from "@/lib/pg";
 
-function validateCategoriaInput(nombre_categoria: string | undefined): string[] {
-    const errors: string[] = []
+export async function GET() {
 
-    if (!nombre_categoria?.trim()) {
-        errors.push('El nombre de la categoría es obligatorio')
-    } else {
-        if (nombre_categoria.trim().length > 100) {
-            errors.push('El nombre de la categoría no puede exceder los 100 caracteres')
-        }
-        if (!/^[a-zA-ZÀ-ÿ0-9\s&-]+$/.test(nombre_categoria.trim())) {
-            errors.push('El nombre de la categoría solo puede contener letras, números, espacios, & y guiones')
-        }
-    }
-
-    return errors
-}
-
-// GET /api/categoria - Obtener todas las categorías
-export async function GET(req: Request) {
     try {
-        const url = new URL(req.url)
-        const search = url.searchParams.get('search')?.trim()
+        const query = `
+            SELECT 
+                id_categoria,
+                nombre_categoria
+            FROM tipo_categoria tc 
+            ORDER BY tc.nombre_categoria ASC
+        `;
 
-        let whereClause = {}
-        if (search) {
-            whereClause = {
-                nombre_categoria: {
-                    contains: search,
-                    mode: 'insensitive' as Prisma.QueryMode
-                }
-            }
+        const result = await db.query(query);
+
+        if (result.rows.length === 0) {
+            return NextResponse.json(
+                { error: "Categoria no encontrada" },
+                { status: 404 }
+            );
         }
 
-        const categorias = await prisma.tipoCategoria.findMany({
-            where: whereClause,
-            select: {
-                id_categoria: true,
-                nombre_categoria: true
-            },
-            orderBy: {
-                nombre_categoria: 'asc'
-            }
-        })
+        const categorias: Categoria[] = result.rows.map(row => ({
+            id_categoria: row.id_categoria,
+            nombre_categoria: row.nombre_categoria?.trim() // trim agregado
+        }));
 
-        if (categorias.length === 0) {
-            return NextResponse.json({ 
-                message: 'No se encontraron categorías',
-                categorias: []
-            }, { status: 404 })
-        }
-
-        return NextResponse.json({ 
-            categorias,
-            message: 'Categorías encontradas exitosamente',
-            total: categorias.length
-        }, { status: 200 })
+        return NextResponse.json(categorias, { status: 200 });
 
     } catch (error) {
-        console.error('Error al obtener categorías:', error)
-        return NextResponse.json({ 
-            error: 'Error interno del servidor',
-            message: 'Ocurrió un error al obtener las categorías'
-        }, { status: 500 })
+        console.error("Error en GET /categorias:", error);
+
+        return NextResponse.json(
+            { error: "Error interno del servidor" },
+            { status: 500 }
+        );
     }
 }
 
-// POST /api/categoria - Crear nueva categoría
-export async function POST(req: Request) {
+
+export async function POST(request: Request) {
     try {
-        const body = await req.json() as Pick<TipoCategoriaType, 'nombre_categoria'>
-        
-        // Validaciones
-        const errors = validateCategoriaInput(body.nombre_categoria)
-        if (errors.length > 0) {
-            return NextResponse.json({ 
-                error: 'Error de validación',
-                errors
-            }, { status: 400 })
+
+        const {
+            nombre_categoria
+        } = await request.json();
+
+        const nombreTrim = nombre_categoria?.trim(); // trim agregado
+
+        if (!nombreTrim) {
+            return NextResponse.json(
+                { error: "Faltan campos obligatorios" },
+                { status: 400 }
+            );
         }
 
-        // Verificar si ya existe una categoría con el mismo nombre
-        const existingCategoria = await prisma.tipoCategoria.findFirst({
-            where: {
-                nombre_categoria: {
-                    equals: body.nombre_categoria.trim(),
-                    mode: 'insensitive'
-                }
-            }
-        })
+        // Verificar si ya existe
+        if (nombreTrim) {
+            const existsQuery = `
+                SELECT nombre_categoria
+                FROM tipo_categoria
+                WHERE nombre_categoria = $1
+            `;
+            const existsResult = await db.query(existsQuery, [nombreTrim]);
 
-        if (existingCategoria) {
-            return NextResponse.json({ 
-                error: 'Categoría duplicada',
-                message: 'Ya existe una categoría con ese nombre'
-            }, { status: 409 })
+            if (existsResult.rowCount || 0 > 0) {
+                return NextResponse.json(
+                    { error: "La categoria ya existe" },
+                    { status: 409 }
+                );
+            }
         }
 
-        // Crear categoría
-        const categoria = await prisma.tipoCategoria.create({
-            data: {
-                nombre_categoria: body.nombre_categoria.trim()
-            },
-            include: {
-                _count: {
-                    select: { productos: true }
-                }
-            }
-        })
+        const createQuery = `INSERT INTO tipo_categoria(nombre_categoria) VALUES ($1)`;
 
-        return NextResponse.json({ 
-            categoria,
-            message: 'Categoría creada exitosamente'
-        }, { status: 201 })
+        const updateResult = await db.query(createQuery, [nombreTrim]);
 
-    } catch (error) {
-        console.error('Error al crear categoría:', error)
-        if (error instanceof Prisma.PrismaClientKnownRequestError) {
-            if (error.code === 'P2002') {
-                return NextResponse.json({ 
-                    error: 'Categoría duplicada',
-                    message: 'Ya existe una categoría con ese nombre'
-                }, { status: 409 })
-            }
-            return NextResponse.json({ 
-                error: 'Error en la base de datos',
-                message: 'Error al crear la categoría en la base de datos'
-            }, { status: 500 })
+        if (updateResult.rowCount === 0) {
+            return NextResponse.json(
+                { error: "Categoria no encontrada" },
+                { status: 404 }
+            );
         }
-        return NextResponse.json({ 
-            error: 'Error interno del servidor',
-            message: 'Ocurrió un error al crear la categoría'
-        }, { status: 500 })
+
+        const selectQuery = `
+            SELECT id_categoria, nombre_categoria
+                FROM tipo_categoria
+                WHERE nombre_categoria = $1
+        `;
+
+        const result = await db.query(selectQuery, [nombreTrim]);
+        const row = result.rows[0];
+
+        const response: Categoria = {
+            id_categoria: row.id_categoria,
+            nombre_categoria: row.nombre_categoria?.trim() // trim agregado
+        };
+
+        return NextResponse.json(response, { status: 200 });
+
+    } catch (error: any) {
+        console.error("Error en PUT /categorias:", error);
+
+        if (error.code === "23505") {
+            return NextResponse.json(
+                { error: "Error de clave duplicada en la base de datos" },
+                { status: 409 }
+            );
+        }
+
+        return NextResponse.json(
+            { error: "Error interno del servidor" },
+            { status: 500 }
+        );
     }
 }

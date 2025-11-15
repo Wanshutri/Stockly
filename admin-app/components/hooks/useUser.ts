@@ -3,20 +3,14 @@
 import { useSession } from "next-auth/react";
 import { useCallback, useEffect, useState } from "react";
 
-export type Usuario = {
-    id_usuario: number;
-    nombre: string;
-    email: string;
-    activo: boolean;
-    id_tipo: number;
-    [key: string]: any;
-}
+import { UsuarioType } from "@/types/db";
 
 export default function useUser() {
-    const [user, setUser] = useState<Usuario | null>(null);
+    const [user, setUser] = useState<UsuarioType | null>(null); 
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<any>(null);
     const { data: session } = useSession();
+
     const userId = (session?.user as any)?.id ?? null
 
     const fetchUser = useCallback(async () => {
@@ -27,6 +21,7 @@ export default function useUser() {
         setLoading(true);
         setError(null);
         try {
+            // 3. La URL de la API es la misma
             const res = await fetch(`/api/usuarios?id=${encodeURIComponent(userId)}`);
             if (!res.ok) {
                 const text = await res.text();

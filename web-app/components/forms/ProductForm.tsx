@@ -5,7 +5,6 @@ import { useEffect, useState } from "react";
 import { useForm, Controller, SubmitHandler } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ProductoType } from "@/types/db";
 
 // ---------- Conversión segura a número ----------
 const toNumber = (val: unknown) => {
@@ -28,14 +27,15 @@ const numericField = (label: string, positive = false) =>
 // ---------- Esquema de validación ----------
 const itemSchema = z.object({
     sku: z.string().trim().min(1, "El SKU es obligatorio"),
+    gtin: z.string().trim().min(1, "El GTIN es obligatorio"),
     nombre: z.string().trim().min(1, "El nombre es obligatorio"),
-    descripcion: z.string().trim().min(1, "La descripción es obligatoria"),
     precioVenta: numericField("Precio de venta", true),
     precioCompra: numericField("Precio de compra", true),
     stock: numericField("Stock"),
     categoria: z.object({ id: z.number(), label: z.string() })
         .nullable()
         .refine((v) => v !== null, { message: "La categoría es obligatoria" }),
+
     marca: z.object({ id: z.number(), label: z.string() })
         .nullable()
         .refine((v) => v !== null, { message: "La marca es obligatoria" }),
@@ -43,7 +43,7 @@ const itemSchema = z.object({
 
 type ItemForm = z.infer<typeof itemSchema>;
 
-export default function ProductoForm({ item }: { item?: ProductoType }) {
+export default function ProductoForm({ item }: { item?: Producto }) {
     const [categorias, setCategorias] = useState<any[]>([]);
     const [marcas, setMarcas] = useState<any[]>([]);
     const [serverError, setServerError] = useState<string | null>(null);
@@ -52,16 +52,19 @@ export default function ProductoForm({ item }: { item?: ProductoType }) {
         resolver: zodResolver(itemSchema),
         defaultValues: {
             sku: item?.sku || "",
+            gtin: item?.gtin || "",
             nombre: item?.nombre || "",
-            descripcion: item?.descripcion || "",
-            precioVenta: (item?.precio_venta ?? 0) as number,
-            precioCompra: (item?.precio_compra ?? 0) as number,
-            stock: (item?.stock ?? 0) as number,
-            categoria: item?.tipo_categoria
-                ? { id: item.tipo_categoria.id_categoria, label: item.tipo_categoria.nombre_categoria }
+            precioVenta: item?.precio_venta ?? 0,
+            precioCompra: item?.precio_compra ?? 0,
+            stock: item?.stock ?? 0,
+            categoria: item?.categoria
+                ? { id: item.categoria.id_categoria, label: item.categoria.nombre_categoria }
                 : null,
-            marca: item?.tipo_marca ? { id: item.tipo_marca.id_marca, label: item.tipo_marca.nombre_marca } : null,
-        },
+            marca: item?.marca
+                ? { id: item.marca.id_marca, label: item.marca.nombre_marca }
+                : null,
+        }
+
     });
 
 
@@ -74,14 +77,15 @@ export default function ProductoForm({ item }: { item?: ProductoType }) {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     sku: data.sku,
+                    gtin: data.gtin,
                     nombre: data.nombre,
-                    descripcion: data.descripcion,
                     precio_venta: data.precioVenta,
                     precio_compra: data.precioCompra,
                     stock: data.stock,
                     id_categoria: data.categoria?.id,
                     id_marca: data.marca?.id,
                 }),
+
             });
 
             if (!res.ok) {
@@ -114,24 +118,24 @@ export default function ProductoForm({ item }: { item?: ProductoType }) {
                 if (item) {
                     const res = await fetch(`/api/productos/${item.sku}`);
                     if (!res.ok) throw new Error("Error al obtener el producto");
-                    const data: ProductoType = await res.json();
+                    const data: Producto = await res.json();
 
                     // Setear los valores del formulario con reset
                     reset({
                         sku: data.sku,
+                        gtin: data.gtin,
                         nombre: data.nombre,
-                        descripcion: data.descripcion,
                         precioVenta: data.precio_venta,
                         precioCompra: data.precio_compra,
                         stock: data.stock,
-                        categoria: data.tipo_categoria
+                        categoria: data.categoria
                             ? {
-                                id: data.tipo_categoria.id_categoria,
-                                label: data.tipo_categoria.nombre_categoria,
+                                id: data.categoria.id_categoria,
+                                label: data.categoria.nombre_categoria
                             }
                             : null,
-                        marca: data.tipo_marca
-                            ? { id: data.tipo_marca.id_marca, label: data.tipo_marca.nombre_marca }
+                        marca: data.marca
+                            ? { id: data.marca.id_marca, label: data.marca.nombre_marca }
                             : null,
                     });
 
@@ -244,6 +248,25 @@ export default function ProductoForm({ item }: { item?: ProductoType }) {
                     )}
                 />
 
+                {/* Stock */}
+                <Controller
+                    name="gtin"
+                    control={control}
+                    render={({ field }) => (
+                        <TextField
+                            {...field}
+                            type="number"
+                            label="Stock"
+                            variant="outlined"
+                            error={!!errors.stock}
+                            helperText={errors.stock?.message}
+                            fullWidth
+                            value={field.value ?? ""}
+                            onChange={(e) => field.onChange(e.target.value)}
+                        />
+                    )}
+                />
+
                 {/* Categoría / Marca */}
                 <div className="grid md:grid-cols-2 gap-4">
                     <Controller
@@ -312,25 +335,6 @@ export default function ProductoForm({ item }: { item?: ProductoType }) {
                     />
 
                 </div>
-
-                {/* Descripción */}
-                <Controller
-                    name="descripcion"
-                    control={control}
-                    render={({ field }) => (
-                        <TextField
-                            {...field}
-                            label="Descripción"
-                            variant="outlined"
-                            multiline
-                            rows={3}
-                            error={!!errors.descripcion}
-                            helperText={errors.descripcion?.message}
-                            fullWidth
-                        />
-                    )}
-                />
-
                 {/* Botón */}
                 <div className="flex flex-col items-center pt-3">
                     <Button type="submit" variant="contained">

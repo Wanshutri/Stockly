@@ -2,7 +2,13 @@ import { signOut } from "next-auth/react";
 import Link from "next/link";
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 
-export default function Navuserwrapper({ name, email }: { name: string, email: string }) {
+type NavuserwrapperProps = {
+    name: string;
+    email: string;
+    logoutButton?: React.ReactNode;
+};
+
+export default function Navuserwrapper({ name, email, logoutButton }: NavuserwrapperProps) {
     return (
         <div className="flex items-center gap-x-4">
             <Link href="/profile" className="flex">
@@ -12,11 +18,13 @@ export default function Navuserwrapper({ name, email }: { name: string, email: s
                 </div>
                 <AccountCircleIcon className="text-black mx-1" fontSize="large"></AccountCircleIcon>
             </Link>
-            <button
-                onClick={() => signOut({ callbackUrl: "/login" })}
-                className="bg-blue-500 px-3 py-2 text-white  rounded cursor-pointer hover:bg-blue-600 transition-colors duration-150 text-sm">
-                Cerrar sesión
-            </button>
+            {logoutButton ?? (
+                <button
+                    onClick={() => signOut({ callbackUrl: "/login" })}
+                    className="bg-blue-500 px-3 py-2 text-white  rounded cursor-pointer hover:bg-blue-600 transition-colors duration-150 text-sm">
+                    Cerrar sesión
+                </button>
+            )}
         </div>
-    )
+    );
 }
