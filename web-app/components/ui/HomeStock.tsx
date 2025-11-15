@@ -2,19 +2,12 @@
 
 import { useEffect, useState } from 'react';
 import InventoryIcon from '@mui/icons-material/Inventory';
-
-type Producto = {
-  sku: string;
-  nombre: string;
-  stock: number;
-  // si después tu API expone umbral, úsalo:
-  stockMin?: number;
-  lowStock?: boolean;
-};
+import { ProductoType } from '@/types/db';
 
 export default function HomeStock() {
-  const [productos, setProductos] = useState<Producto[] | null>(null);
+  const [productos, setProductos] = useState<ProductoType[] | null>(null);
   const [error, setError] = useState<string>('');
+  const [lowStock, setLowStock] = useState<number>(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -31,7 +24,19 @@ export default function HomeStock() {
           throw new Error(`HTTP ${res.status}`);
         }
         const data = await res.json();
+
+        const productos = data.productos;
+
+        let c = 0
+
+        productos.forEach((p: ProductoType) => {
+          if (p.stock < 3) {
+            c = + 1
+          }
+        });
+
         if (!cancelled) setProductos(data.productos ?? []);
+        if (!cancelled) setLowStock(c ?? 0);
       } catch (e) {
         console.error('Error al obtener /api/productos', e);
         if (!cancelled) setError('No se pudo obtener el stock');
@@ -43,13 +48,6 @@ export default function HomeStock() {
 
   const isLoading = productos === null && !error;
   const total = productos?.length ?? 0;
-
-  // Ajusta esta lógica si tu API trae umbral/bandera
-  const necesitanRepo = (productos ?? []).filter(p =>
-    typeof p.stockMin === 'number' ? p.stock <= (p.stockMin as number)
-    : typeof p.lowStock === 'boolean' ? p.lowStock
-    : p.stock <= 0
-  ).length;
 
   return (
     <div className="shadow-md p-5 w-full rounded-xl bg-white hover:bg-gray-100 hover:shadow-lg transition-[background-color,box-shadow] duration-300">
@@ -70,23 +68,43 @@ export default function HomeStock() {
         {/* total */}
         <div className="col-start-2 row-start-2">
           <h4 className="text-2xl font-bold">
-            {isLoading ? 'Cargando…' : error ? '—' : `${total} Productos`}
+            {isLoading ? 'Cargando…' : error ? '—' :
+              lowStock > 0
+                ? `${lowStock} ${lowStock === 1 ? 'producto' : 'productos'}`
+                : `${total} ${total === 1 ? 'producto' : 'productos'}`
+            }
           </h4>
         </div>
 
         {/* reposición */}
         <div className="col-start-2 row-start-3">
-          {isLoading ? (
-            <p className="text-sm text-gray-500">Obteniendo datos…</p>
-          ) : error ? (
-            <p className="text-sm text-red-600 font-medium">{error}</p>
-          ) : (
-            <p className={`text-sm font-medium ${necesitanRepo > 0 ? 'text-red-600' : 'text-green-600'}`}>
-              {necesitanRepo > 0 ? 'Requieren Reposicion' : 'Sin reposiciones pendientes'}
-            </p>
-          )}
-        </div>
+          {(() => {
+            const label = lowStock === 1 ? 'producto' : 'productos';
+            const verb = lowStock === 1 ? 'requiere' : 'requieren';
 
+            if (lowStock === 0) {
+              return (
+                <span className="text-green-800">
+                  Mantienen buen stock
+                </span>
+              );
+            }
+
+            if (lowStock > 3) {
+              return (
+                <span className="text-red-500">
+                  {verb} reposición
+                </span>
+              );
+            }
+
+            return (
+              <span className="text-orange-500">
+                {verb} reposición
+              </span>
+            );
+          })()}
+        </div>
       </div>
     </div>
   );

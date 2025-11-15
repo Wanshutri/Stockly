@@ -1,10 +1,9 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcrypt'
-// Asegúrate de que la ruta a tus tipos sea correcta
 import type { UsuarioType } from '@/types/db'
 
-// Función auxiliar para validar entrada (adaptada para ser más flexible)
+// Función auxiliar para validar entrada 
 function validateUserInput(data: Partial<UsuarioType>, isCreate = true) {
     const errors: string[] = []
 
@@ -31,7 +30,7 @@ export async function POST(req: Request) {
         const body = await req.json()
         const { nombre, email, password, id_tipo = 2 } = body
 
-        // Validaciones para creación (isCreate = true)
+        // Validaciones para creación
         const errors = validateUserInput({ nombre, email, password }, true)
         if (errors.length > 0) {
             return NextResponse.json({ success: false, errors }, { status: 400 })
@@ -56,8 +55,6 @@ export async function POST(req: Request) {
             }
         })
 
-        // remove sensitive fields
-        // @ts-ignore
         const { password: _, ...safeUser } = user
 
         return NextResponse.json({ success: true, user: safeUser }, { status: 201 })
@@ -98,7 +95,7 @@ export async function GET(req: Request) {
     }
 }
 
-// --- NUEVO MÉTODO PATCH PARA ACTUALIZAR ---
+// --- PATCH PARA ACTUALIZAR ---
 export async function PATCH(req: Request) {
     try {
         const url = new URL(req.url)
@@ -112,7 +109,7 @@ export async function PATCH(req: Request) {
         const body = await req.json()
         const { nombre, email, password, id_tipo, activo } = body
 
-        // 1. Validaciones parciales (isCreate = false)
+        // 1. Validaciones parciales
         const errors = validateUserInput({ nombre, email, password }, false)
         if (errors.length > 0) {
             return NextResponse.json({ success: false, errors }, { status: 400 })
@@ -163,34 +160,50 @@ export async function PATCH(req: Request) {
 
 export async function DELETE(req: Request) {
     try {
-        const url = new URL(req.url)
-        const idStr = url.searchParams.get('id')
+        // 1. Obtener la URL y el parámetro 'id'
+        const { searchParams } = new URL(req.url);
+        const idParam = searchParams.get('id');
 
-        if (!idStr) {
-            return NextResponse.json({ success: false, error: 'ID de usuario obligatorio' }, { status: 400 })
+        if (!idParam) {
+            return NextResponse.json(
+                { success: false, error: 'ID de usuario es obligatorio' }, 
+                { status: 400 }
+            );
         }
-        const id_usuario = Number(idStr)
 
-        // Verificar si existe antes de intentar borrar
-        const existingUser = await prisma.usuario.findUnique({ where: { id_usuario } })
+        const id_usuario = Number(idParam);
+
+        if (isNaN(id_usuario)) {
+            return NextResponse.json(
+                { success: false, error: 'ID inválido' }, 
+                { status: 400 }
+            );
+        }
+
+        // 3. Verificar si existe antes de borrar
+        const existingUser = await prisma.usuario.findUnique({
+            where: { id_usuario } 
+        });
+
         if (!existingUser) {
-             return NextResponse.json({ success: false, error: 'Usuario no encontrado' }, { status: 404 })
+            return NextResponse.json(
+                { success: false, error: 'Usuario no encontrado' }, 
+                { status: 404 }
+            );
         }
 
-        // Ejecutar eliminación
+        // 4. Ejecutar la eliminación
         await prisma.usuario.delete({
             where: { id_usuario }
-        })
+        });
 
-        return NextResponse.json({ success: true, message: 'Usuario eliminado correctamente' })
+        return NextResponse.json({ success: true });
 
-    } catch (err) {
-        console.error('DELETE Error:', err)
-        // Manejo básico de errores de integridad referencial (si el usuario tiene ventas asociadas, etc.)
-        // @ts-ignore
-        if (err.code === 'P2003') {
-             return NextResponse.json({ success: false, error: 'No se puede eliminar el usuario porque tiene registros asociados.' }, { status: 409 })
-        }
-        return NextResponse.json({ success: false, error: 'Error interno del servidor' }, { status: 500 })
+    } catch (error) {
+        console.error("Error eliminando usuario:", error);
+        return NextResponse.json(
+            { success: false, error: 'Error interno del servidor' }, 
+            { status: 500 }
+        );
     }
 }

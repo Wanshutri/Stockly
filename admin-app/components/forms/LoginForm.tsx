@@ -1,26 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { signIn, type SignInResponse } from "next-auth/react";
+import { signIn, getSession, signOut, type SignInResponse } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import React from "react"; 
-import Link from "next/link"; 
-// import Image from "next/image"; // Ya no lo necesitamos si usamos solo SVG
+import Link from "next/link";
 
-// --- Iconos SVG (ahora incluyendo AdminPanelSettingsIcon) ---
-// Si no tienes @mui/icons-material instalado:
-// const AdminIcon = (props: React.SVGProps<SVGSVGElement>) => (
-//   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
-//     <path strokeLinecap="round" strokeLinejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.5c.55 0 1.02.398 1.11.94l.167.992c.094.56.544.975 1.1.928l1.73-.288c.55-.092 1.05.143 1.257.65l.84.97c.2.23.2.562 0 .792l-.84.97a1.125 1.125 0 01-1.257.65l-1.73-.288c-.55-.047-1.006.368-1.1.928l-.168.992c-.09.542-.56.94-1.11.94h-2.5c-.55 0-1.02-.398-1.11-.94l-.167-.992a1.125 1.125 0 01-1.1-.928l-1.73.288c-.55.092-1.05-.143-1.257-.65l-.84-.97a1.125 1.125 0 010-.792l.84-.97c.2-.23.69-.462 1.257-.65l1.73-.288a1.125 1.125 0 011.1-.928l.167-.992z" />
-//     <path strokeLinecap="round" strokeLinejoin="round" d="M12 11.25a1.125 1.125 0 110-2.25 1.125 1.125 0 010 2.25z" />
-//   </svg>
-// );
-import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings'; // Este es el nuevo icono
-import MailIcon from '@mui/icons-material/Mail'; // Si usas MUI icons
-import LockIcon from '@mui/icons-material/Lock'; // Si usas MUI icons
+// --- Iconos ---
+import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings'; 
+import MailIcon from '@mui/icons-material/Mail'; 
+import LockIcon from '@mui/icons-material/Lock'; 
 
-
-// Este spinner ya estaba definido en Tailwind
 const SpinnerIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" {...props}>
     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -35,21 +25,21 @@ export default function LoginForm() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const router = useRouter();
-
     async function onSubmit(e: React.FormEvent) {
         e.preventDefault();
         setLoading(true);
         setError(null);
 
+        // 2. Intenta iniciar sesión
         const res = (await signIn("credentials", {
             redirect: false,
             email,
             password,
         })) as SignInResponse | undefined;
 
-        setLoading(false);
-
+        // 3. Manejo de error de credenciales
         if (res?.error) {
+            setLoading(false);
             if (res.error === "CredentialsSignin") {
                 setError("Correo electrónico o contraseña incorrectos.");
             } else {
@@ -58,8 +48,20 @@ export default function LoginForm() {
             return;
         }
 
-        router.push("/");
-        router.refresh(); 
+        const session = await getSession();
+        
+        const userRole = (session?.user as any)?.id_tipo; 
+
+        if (userRole === 1) {
+            // 5. ES ADMIN Redirigir al home.
+            router.push("/");
+            router.refresh();
+        } else {
+            // 6. NO ES ADMIN. Rechazar y mostrar error.
+            await signOut({ redirect: false }); // Cierra la sesión que se acaba de crear
+            setError("Acceso denegado. Esta cuenta no tiene permisos de administrador.");
+            setLoading(false);
+        }
     }
 
     return (
@@ -67,13 +69,10 @@ export default function LoginForm() {
             onSubmit={onSubmit} 
             className="w-full max-w-md bg-white p-8 sm:p-10 rounded-2xl shadow-xl border border-gray-100"
         >
-            {/* Encabezado con el nuevo icono de Administración */}
             <div className="text-center mb-10">
                 <div className="flex justify-center mb-4">
                     <div className="bg-blue-100 p-3 rounded-full">
-                        {/* --- NUEVO ICONO AQUÍ --- */}
                         <AdminPanelSettingsIcon className="w-8 h-8 text-blue-600" /> 
-                        {/* --- FIN NUEVO ICONO --- */}
                     </div>
                 </div>
                 <h2 className="text-2xl font-bold tracking-tight text-gray-900">
@@ -83,10 +82,7 @@ export default function LoginForm() {
                     Accede a tu cuenta de administrador.
                 </p>
             </div>
-
-            {/* Campos del formulario */}
             <div className="space-y-6">
-                
                 <div>
                     <label 
                         htmlFor="email"
@@ -148,7 +144,7 @@ export default function LoginForm() {
                         {error}
                     </div>
                 )}
-
+                
                 <button
                     type="submit"
                     disabled={loading}

@@ -28,7 +28,8 @@ export type BigActionCardProps = {
   onClick?: () => void;
   disabled?: boolean;
   className?: string;
-  icon?: React.ReactNode; // e.g., an icon button bottom-right
+  icon?: React.ReactNode;
+  color: string; // e.g., an icon button bottom-right
 };
 
 export const BigActionCard: React.FC<BigActionCardProps> = ({
@@ -39,6 +40,7 @@ export const BigActionCard: React.FC<BigActionCardProps> = ({
   disabled,
   className,
   icon,
+  color
 }) => {
   const fmt = currencyFormatter(currency);
   const hasTextAmount = typeof amount === "string";
@@ -49,10 +51,7 @@ export const BigActionCard: React.FC<BigActionCardProps> = ({
       disabled={disabled}
       className={cn(
         "group relative grid h-64 w-full place-content-start rounded-2xl p-5 text-left",
-        hasTextAmount
-          ? "bg-orange-500 text-white shadow-lg transition-transform duration-150 ease-out hover:scale-[1.01] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-orange-300"
-          : "bg-blue-500 text-white shadow-lg transition-transform duration-150 ease-out hover:scale-[1.01] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300",
-        disabled && "opacity-60 cursor-not-allowed",
+        `bg-${color}-500 text-white shadow-lg transition-transform duration-150 ease-out hover:scale-[1.01] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-${color}-300"`,
         className
       )}
       aria-label={label}

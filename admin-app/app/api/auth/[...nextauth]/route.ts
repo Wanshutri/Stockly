@@ -20,58 +20,49 @@ const authOptions = {
                 req: any
             ) {
                 try {
-                    // Validaciones básicas de entrada
                     if (!credentials?.email || !credentials?.password) {
                         throw new Error('Debes ingresar tu correo y contraseña')
                     }
 
-                    const user: UsuarioType = await (prisma as PrismaClient).usuario.findUnique({
+                    const user: any = await (prisma as any).usuario.findUnique({
                         where: { email: credentials.email },
                     })
 
-                    if (!user) {
-                        throw new Error('El usuario no existe')
-                    }
+                    if (!user) throw new Error('El usuario no existe')
+                    if (!user.password) throw new Error('Cuenta inválida (sin contraseña)')
 
-                    if (!user.password) {
-                        throw new Error('Cuenta inválida (sin contraseña)')
-                    }
                     const valid = await bcrypt.compare(credentials.password, user.password)
-                    
-                    if (!valid) {
-                        throw new Error('Contraseña incorrecta')
-                    }
+                    if (!valid) throw new Error('Contraseña incorrecta')
+                    if (!user.activo) throw new Error('Cuenta deshabilitada.')
 
-                    if (!user.activo) {
-                        throw new Error('Cuenta deshabilitada, contacte a su administrador.')
+                    return { 
+                        id: String(user.id_usuario),
+                        name: user.nombre,
+                        email: user.email,
+                        id_tipo: user.id_tipo
                     }
-
-                    // Si todo está bien, devuelve sólo el id del usuario (guardaremos solo el id en la sesión)
-                    return { id: String(user.id_usuario) }
 
                 } catch (err: any) {
-                    // Si hay error, lo lanzamos para que NextAuth lo capture y lo muestre
                     throw new Error(err.message || 'Error al iniciar sesión')
                 }
             },
         }),
     ],
-    session: { strategy: 'jwt' },
+    session: { strategy: 'jwt' as const },
     pages: { signIn: '/login' },
 
     callbacks: {
-    async jwt({ token, user }: any) {
+        async jwt({ token, user }: any) {
             if (user) {
-                return {
-                    ...token,
-                    id: (user as any).id
-                }
+                token.id = user.id
+                token.id_tipo = user.id_tipo
             }
             return token
         },
-    async session({ session, token }: any) {
+        async session({ session, token }: any) {
             if (session.user) {
-                session.user = { id: token.id as string }
+                session.user.id = token.id as string
+                session.user.id_tipo = token.id_tipo
             }
             return session
         },

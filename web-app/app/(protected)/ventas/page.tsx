@@ -12,19 +12,13 @@ import useUser from '@/components/hooks/useUser'
 import type { ProductoType } from '@/types/db'
 import PaymentIcon from '@mui/icons-material/Payment';
 import CenterFocusWeakIcon from '@mui/icons-material/CenterFocusWeak';
+import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
 
 const TAX_RATE = 0.19
 const CURRENCY = 'CLP'
-const MOCK_CATALOG: Array<Omit<LineItem, 'qty'>> = [
-  { id: 'T-SA123-A', sku: 'T-SA123-A', name: 'Leche Entera', price: 999 },
-  { id: 'T-SA123-B', sku: 'T-SA123-B', name: 'Leche Descremada', price: 1099 },
-  { id: 'C-AZ987-Z', sku: 'C-AZ987-Z', name: 'Azucar 1kg', price: 1490 },
-]
+const MOCK_CATALOG: Array<Omit<LineItem, 'qty'>> = []
 
-const INITIAL_CART: LineItem[] = [
-  { ...MOCK_CATALOG[0], qty: 2 },
-  { ...MOCK_CATALOG[2], qty: 1 },
-]
+const INITIAL_CART: LineItem[] = []
 
 export default function POSPreview() {
   const router = useRouter()
@@ -163,6 +157,48 @@ export default function POSPreview() {
     router.push('/ventas/pagar')
   }
 
+  // Envía una venta al endpoint POST /api/ventas
+  const submitSale = async (isCard: boolean) => {
+    if (!cartItems.length) return
+
+    const fecha = new Date().toISOString() // fecha de hoy en formato ISO
+    const pago = isCard
+      ? { monto_efectivo: 0, monto_tarjeta: total }
+      : { monto_efectivo: total, monto_tarjeta: 0 }
+
+    const detalles = cartItems.map((item) => ({
+      sku: item.sku,
+      cantidad: item.qty,
+    }))
+
+    try {
+      const res = await fetch('/api/ventas', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fecha, pago, detalles }),
+      })
+
+      const body = await res.json().catch(() => ({}))
+
+      if (!res.ok) {
+        console.error('Error creating sale:', body)
+        alert(body.error || 'Error al crear la venta')
+        return
+      }
+
+      // Venta creada: limpiar carrito y navegar al detalle de la venta si viene el id
+      setCartItems([])
+      const ventaId = body?.venta?.id_compra
+      if (ventaId) {
+        router.push(`/ventas/${ventaId}`)
+      } else {
+        router.push('/ventas')
+      }
+    } catch (err) {
+      console.error('Error en submitSale:', err)
+      alert('Error al procesar la venta')
+    }
+  }
   return (
     <div className="mx-auto mt-[8rem] grid max-w-6xl grid-cols-12 gap-4 p-6">
       <div className="col-span-10 flex flex-col rounded-2xl border border-neutral-200 bg-white">
@@ -189,20 +225,15 @@ export default function POSPreview() {
         <div className="grid grid-cols-2 gap-4">
           <CashierCard cashierName={cashierName} onClearCart={handleClear} />
 
-          {/* Nueva card o botón a la derecha */}
-          {/* <div className="rounded-xl bg-white p-4 shadow">
-            <button className="w-full bg-blue-600 text-white py-3 rounded-lg">
-              Nuevo botón
-            </button>
-          </div> */}
-          <BigActionCard
+
+          {/* <BigActionCard
             label=""
             amount={"Escanear Productos"}
             currency={""}
 
             disabled={false}
             icon={<CenterFocusWeakIcon />}
-          />
+          /> */}
         </div>
 
         <SearchProductCard
@@ -215,14 +246,36 @@ export default function POSPreview() {
           hasSearched={hasSearched}
           onSelectResult={handleSelectSearchResult}
         />
-        <BigActionCard
-          label="$ PAGAR"
-          amount={total}
-          currency={CURRENCY}
-          onClick={handlePay}
-          disabled={!cartItems.length}
-          icon={<PaymentIcon />}
-        />
+
+        <div className="grid grid-cols-2 gap-4">
+          <BigActionCard
+            label="$ PAGAR EFECTIVO"
+            amount={total}
+            currency={CURRENCY}
+            onClick={() => submitSale(false)}
+            disabled={!cartItems.length}
+            icon={<AttachMoneyIcon />}
+            color="blue"
+          />
+          <BigActionCard
+            label="$ PAGAR TARJETA"
+            amount={total}
+            currency={CURRENCY}
+            onClick={() => submitSale(true)}
+            disabled={!cartItems.length}
+            icon={<PaymentIcon />}
+            color="orange"
+          />
+
+          {/* <BigActionCard
+            label=""
+            amount={"Escanear Productos"}
+            currency={""}
+
+            disabled={false}
+            icon={<CenterFocusWeakIcon />}
+          /> */}
+        </div>
       </div>
     </div>
   )

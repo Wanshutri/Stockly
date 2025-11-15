@@ -1,73 +1,115 @@
-import Swal from 'sweetalert2'
-import Toastify from 'toastify-js'
-import 'toastify-js/src/toastify.css'
+"use client";
 
-async function deleteRows(url: string, rows: any[], deletionKey: string) {
-    try {
-        for (const row of rows) {
-            const idValue = row[deletionKey]
-            if (idValue === undefined) throw new Error(`La fila no tiene la propiedad ${deletionKey}`)
+import React, { useState } from 'react';
+import { 
+  Dialog, 
+  DialogTitle, 
+  DialogContent, 
+  DialogContentText, 
+  DialogActions, 
+  Button,
+  CircularProgress 
+} from '@mui/material';
 
-            const response = await fetch(`${url}/${idValue}`, {
-                method: 'DELETE',
-            })
-
-            if (!response.ok) throw new Error(`Error al eliminar ${row.sku ?? idValue}`)
-        }
-        return true
-    } catch (error) {
-        console.error(error)
-        return false
-    }
+// Definimos la estructura de lo que esperamos recibir
+interface DeleteUserModalProps {
+  open: boolean;
+  onClose: () => void;
+  // Esta función espera recibir el ID numérico del usuario borrado
+  onDeleteSuccess: (deletedId: number) => void; 
+  // Aceptamos que el usuario pueda tener la propiedad 'id' o 'id_usuario' para evitar errores
+  userToDelete: { id?: number; id_usuario?: number; nombre?: string } | null;
 }
 
-export default function OpenPopUp(
-    rows: any[],
-    url: string,
-    name: string,
-    deletionKey: string,
-    onSuccess?: () => void
-) {
-    const n = rows.length
+export default function DeleteUserModal({ 
+  open, 
+  onClose, 
+  onDeleteSuccess, 
+  userToDelete 
+}: DeleteUserModalProps) {
 
-    Swal.fire({
-        title: '¿Estás seguro?',
-        text: `Se eliminará${n > 1 ? 'n' : ''} ${n} ${name}${n > 1 ? 's' : ''}. Esta acción no se puede deshacer.`,
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#d33',
-        cancelButtonColor: '#3085d6',
-        confirmButtonText: 'Eliminar',
-        cancelButtonText: 'Cancelar',
-    }).then(async (result) => {
-        if (result.isConfirmed) {
-            const success = await deleteRows(url, rows, deletionKey)
+  const [loading, setLoading] = useState(false);
 
-            if (success) {
-                if (onSuccess) onSuccess()
+  const handleDelete = async () => {
+    if (!userToDelete) return;
 
-                Toastify({
-                    text: `${n} ${name}${n > 1 ? 's' : ''} eliminado${n > 1 ? 's' : ''} correctamente.`,
-                    duration: 4000,
-                    gravity: 'bottom',
-                    position: 'right',
-                    style: {
-                        background: 'linear-gradient(135deg, #00b09b, #96c93d)',
-                        borderRadius: '10px',
-                        fontSize: '14px',
-                        padding: '12px 20px',
-                        textAlign: 'center',
-                        color: '#fff',
-                        boxShadow: '0 4px 10px rgba(0, 0, 0, 0.15)',
-                    },
-                }).showToast()
-            } else {
-                Swal.fire({
-                    title: 'Error',
-                    text: 'Ocurrió un problema al eliminar los registros.',
-                    icon: 'error',
-                })
-            }
-        }
-    })
+    // --- CORRECCIÓN CRÍTICA AQUÍ ---
+    // Verificamos qué propiedad tiene el ID correcto.
+    // Prisma suele usar 'id_usuario' en tu base de datos, pero a veces el frontend espera 'id'.
+    const userId = userToDelete.id_usuario || userToDelete.id;
+
+    // Validación de seguridad: Si no hay ID, no hacemos la petición
+    if (!userId) {
+      console.error("Error: No se pudo encontrar el ID del usuario. Objeto recibido:", userToDelete);
+      alert("Error: No se pudo identificar el usuario a eliminar.");
+      return;
+    }
+    
+    setLoading(true);
+    try {
+      // Hacemos la petición pasando el ID validado
+      const response = await fetch(`/api/usuarios?id=${userId}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        // Avisamos al componente padre que se borró el usuario con este ID
+        onDeleteSuccess(userId); 
+        onClose();
+      } else {
+        const errorData = await response.json();
+        console.error("Error al eliminar:", errorData);
+        alert("Hubo un error al intentar eliminar el usuario.");
+      }
+    } catch (error) {
+      console.error("Error de red:", error);
+      alert("Error de conexión con el servidor.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Dialog
+      open={open}
+      onClose={onClose}
+      aria-labelledby="alert-dialog-title"
+      aria-describedby="alert-dialog-description"
+      maxWidth="sm"
+      fullWidth
+    >
+      <DialogTitle id="alert-dialog-title" sx={{ fontWeight: 'bold', color: '#d32f2f' }}>
+        ¿Eliminar usuario?
+      </DialogTitle>
+      
+      <DialogContent>
+        <DialogContentText id="alert-dialog-description">
+          Estás a punto de eliminar al usuario <strong>{userToDelete?.nombre || "Seleccionado"}</strong>.
+          <br /><br />
+          Esta acción es permanente y no se puede deshacer. ¿Estás seguro de que deseas continuar?
+        </DialogContentText>
+      </DialogContent>
+      
+      <DialogActions sx={{ padding: 3 }}>
+        <Button 
+          onClick={onClose} 
+          color="inherit" 
+          disabled={loading}
+          sx={{ color: 'text.secondary' }}
+        >
+          Cancelar
+        </Button>
+        <Button 
+          onClick={handleDelete} 
+          color="error" 
+          variant="contained" 
+          disabled={loading}
+          autoFocus
+          sx={{ boxShadow: 'none' }}
+        >
+          {loading ? <CircularProgress size={24} color="inherit" /> : "Eliminar Usuario"}
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
 }

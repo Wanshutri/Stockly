@@ -5,6 +5,7 @@ const publicPaths = [
   "/login",
   "/register",
   "/public",
+  "/api"
 ];
 
 // Admin SOLO con rutas exclusivas
