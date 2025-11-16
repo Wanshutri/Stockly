@@ -10,12 +10,12 @@ import { PieChart } from "@mui/x-charts/PieChart";
 import { LineChart } from "@mui/x-charts/LineChart";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
 
-
 interface CompraApiRaw {
   id_compra: number;
   fecha: string;
   total: string;
   monto_efectivo: string;
+  monto_tarjeta: string; // <- AGREGADO
 }
 
 interface DetalleCompraApiRaw {
@@ -52,6 +52,7 @@ interface Venta {
   fecha: string;
   total: string;
   monto_efectivo: string;
+  monto_tarjeta: string; // <- AGREGADO
   detalles_compra: DetalleCompra[];
 }
 
@@ -70,6 +71,25 @@ function formatCurrency(value: number): string {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(value);
+}
+
+// Helper para parsear fecha cuando lo necesitemos en gráficos
+function parseFechaCompra(fecha: string): Date | null {
+  if (!fecha) return null;
+
+  const raw = fecha.trim();
+
+  // Intento directo (ISO válido)
+  let d = new Date(raw);
+  if (!isNaN(d.getTime())) return d;
+
+  // Intento alternativo si viniera en formato "YYYY-MM-DD HH:mm:ss"
+  const normalized = raw.replace(" ", "T") + "Z";
+  d = new Date(normalized);
+  if (!isNaN(d.getTime())) return d;
+
+  console.warn("Fecha inválida desde API /compras:", fecha);
+  return null;
 }
 
 interface KpiCardProps {
@@ -205,6 +225,7 @@ export default function DashboardPage() {
             fecha: compra.fecha,
             total: compra.total,
             monto_efectivo: compra.monto_efectivo,
+            monto_tarjeta: compra.monto_tarjeta, // <- AGREGADO
             detalles_compra: detallesDeEstaCompra,
           };
         });
@@ -222,6 +243,13 @@ export default function DashboardPage() {
 
     fetchData();
   }, []);
+
+
+  const handlePrint = () => {
+    if (typeof window !== "undefined") {
+      window.print();
+    }
+  };
 
   // ---------------------------------------------------------------
   // 4.2. Cálculo de métricas (useMemo)
@@ -316,7 +344,9 @@ export default function DashboardPage() {
     const dayMap = new Map<string, number>();
 
     for (const venta of data.ventas) {
-      const d = new Date(venta.fecha);
+      const d = parseFechaCompra(venta.fecha);
+      if (!d) continue;
+
       const key = d.toISOString().substring(0, 10); // yyyy-mm-dd
       const current = dayMap.get(key) || 0;
       // podrías usar Number(venta.monto_efectivo) si quieres explícitamente efectivo
@@ -342,7 +372,9 @@ export default function DashboardPage() {
     const buckets = new Array(24).fill(0);
 
     for (const venta of data.ventas) {
-      const d = new Date(venta.fecha);
+      const d = parseFechaCompra(venta.fecha);
+      if (!d) continue;
+
       const hour = d.getHours();
       buckets[hour] += Number(venta.total);
     }
@@ -357,9 +389,27 @@ export default function DashboardPage() {
     {
       field: "fecha",
       headerName: "Fecha",
-      width: 190,
-      valueFormatter: (params : any) =>
-        new Date(params.value).toLocaleString("es-CL"),
+      width: 220,
+      renderCell: (params: any) => {
+        const raw = String(params.value ?? "");
+        if (!raw) return "";
+
+        // Ejemplo de raw: "2025-11-15T21:04:42.090Z"
+        const [datePart, timePartRaw] = raw.split("T");
+        if (!datePart || !timePartRaw) {
+          return raw;
+        }
+
+        // nos quedamos con HH:MM:SS de "21:04:42.090Z"
+        const timeClean = timePartRaw.replace("Z", "").split(".")[0];
+
+        return (
+          <div className="text-xs leading-tight">
+            <div className="font-medium text-gray-800">{datePart}</div>
+            <div className="text-gray-500">{timeClean}</div>
+          </div>
+        );
+      },
     },
     {
       field: "total",
@@ -389,6 +439,16 @@ export default function DashboardPage() {
         </span>
       ),
     },
+    {
+      field: "monto_tarjeta", // <- AGREGADO
+      headerName: "Tarjeta",
+      width: 130,
+      renderCell: (params) => (
+        <span className="text-indigo-700 font-medium">
+          {formatCurrency(Number(params.value))}
+        </span>
+      ),
+    },
   ];
 
   const rows = useMemo(() => {
@@ -400,6 +460,7 @@ export default function DashboardPage() {
       total: Number(venta.total),
       itemCount: venta.detalles_compra.length,
       monto_efectivo: Number(venta.monto_efectivo),
+      monto_tarjeta: Number(venta.monto_tarjeta), // <- AGREGADO
     }));
   }, [data]);
 
@@ -424,13 +485,20 @@ export default function DashboardPage() {
   const tickLabelStyle = { fontSize: 11 };
 
   return (
-    <div className="min-h-screen bg-white p-6 md:p-8">
+    <div className="min-h-screen bg-white p-6 md:p-8 mt-15">
       <div className="max-w-6xl mx-auto space-y-8">
         {/* HEADER */}
-        <header className="space-y-2">
+        <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm text-gray-500">
             Resumen de ventas en efectivo y rendimiento de productos.
           </p>
+          <button
+            onClick={handlePrint}
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-sky-500 bg-sky-50 px-4 py-2 text-xs font-semibold text-sky-700 hover:bg-sky-100 hover:border-sky-600 active:bg-sky-200 transition-colors shadow-sm"
+          >
+            <span className="text-base">📄</span>
+            <span>Exportar a PDF</span>
+          </button>
         </header>
 
         {/* FILA 1: KPIs */}

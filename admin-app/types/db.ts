@@ -8,4 +8,10 @@ interface UsuarioType {
     created_at?: Date;
 }
 
-export default UsuarioType;
+interface User {
+    id: number;
+    nombre: string;
+    email: string;
+    rol: 'Admin' | 'Vendedor' | 'Bodeguero';
+    estado: 'Activo' | 'Inactivo';
+}

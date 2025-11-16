@@ -1,7 +1,4 @@
 import { Pool } from 'pg';
-import dotenv from 'dotenv';
-
-dotenv.config();
 
 class PostgresDB {
     private static instance: PostgresDB;
@@ -16,9 +13,25 @@ class PostgresDB {
             port: Number(process.env.DB_PORT) || 5432,
         });
 
-        this.pool.connect()
-            .then(() => console.log('Conectado a PostgreSQL'))
-            .catch(err => console.error('Error conectando a PostgreSQL', err));
+        this.connectWithRetry(5, 2000); // 5 intentos, 2s de retraso
+    }
+
+    private async connectWithRetry(retries: number, delayMs: number) {
+        for (let i = 0; i < retries; i++) {
+            try {
+                await this.pool.connect();
+                console.log('Conectado a PostgreSQL');
+                return;
+            } catch (err) {
+                console.error(`Intento ${i + 1} fallido. Reintentando en ${delayMs / 1000}s...`, err);
+                if (i < retries - 1) {
+                    await new Promise(res => setTimeout(res, delayMs));
+                } else {
+                    console.error('No se pudo conectar a PostgreSQL después de varios intentos.');
+                    process.exit(1); // Opcional: termina la app si no se conecta
+                }
+            }
+        }
     }
 
     public static getInstance(): PostgresDB {

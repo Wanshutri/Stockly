@@ -33,8 +33,7 @@ COPY . .
 ENV NEXT_TELEMETRY_DISABLED 1
 ENV NODE_ENV production
 
-# Generamos el cliente de Prisma
-RUN npm run prisma:generate
+
 # Nota: no ejecutamos las migraciones en tiempo de build porque requieren
 # la variable de entorno DATABASE_URL disponible y conexión a la DB.
 # Las migraciones se aplicarán en tiempo de arranque desde el entrypoint.
@@ -63,7 +62,6 @@ RUN apt-get update \
 COPY --from=builder /app/package.json ./
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
-COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/node_modules ./node_modules
 
 # Ajustes de permisos

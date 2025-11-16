@@ -18,7 +18,7 @@ export type LineItem = {
   // Campos completos del producto
   gtin?: string
   precio_compra?: number
-  stock?: number
+  stock: number
   categoria?: {
     id_categoria: number
     nombre_categoria: string

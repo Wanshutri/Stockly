@@ -18,8 +18,6 @@ export default function Page() {
    return (
       <main className="flex-grow p-4 sm:p-6 lg:p-8">
          <div className="max-w-7xl mx-auto space-y-8">
-
-            {/* --- Sección 1: Bienvenida (opcional, puedes eliminarla si quieres un home más simple) --- */}
             <div>
                <h2 className="text-3xl font-bold mt-20 tracking-tight text-gray-900">
                   Panel de Administración
@@ -29,7 +27,6 @@ export default function Page() {
                </p>
             </div>
 
-            {/* --- Sección 2: Módulo Principal (Ocupa toda la pantalla) --- */}
             <div className="bg-gradient-to-br from-gray-700 to-blue-500 rounded-2xl shadow-xl 
                         p-12 lg:p-20 flex flex-col items-center justify-center text-center
                         min-h-[calc(100vh-300px)]">

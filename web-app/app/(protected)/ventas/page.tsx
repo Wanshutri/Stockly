@@ -1,5 +1,5 @@
 'use client'
-
+import "toastify-js/src/toastify.css"
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
 import { useSession } from 'next-auth/react'
@@ -10,6 +10,7 @@ import { SearchProductCard, SearchProductResult } from '@/components/ui/VentaSea
 import VentasPagosCard from '@/components/ui/VentasPagosCard'
 import PagarButton from '@/components/ui/PagarButton'
 import useUser from '@/components/hooks/useUser'
+import Toastify from 'toastify-js'
 
 
 const TAX_RATE = 0.19
@@ -58,19 +59,60 @@ export default function POSPreview() {
     setCartItems((prev) => {
       const existing = prev.find((item) => item.id === product.id)
       if (existing) {
+        const newQty = existing.qty + 1;
+        if (newQty > product.stock) {
+          Toastify({
+            text: `No hay suficiente stock. Stock disponible: ${product.stock}`,
+            duration: 3000,
+            gravity: "top",
+            position: "right",
+            backgroundColor: "#ff9800",
+            close: true
+          }).showToast()
+          return prev
+        }
+
         return prev.map((item) =>
           item.id === product.id ? { ...item, qty: item.qty + 1 } : item
         )
       }
+
+      if (product.stock <= 0) {
+        Toastify({
+          text: 'Producto sin stock disponible',
+          duration: 3000,
+          gravity: "top",
+          position: "right",
+          backgroundColor: "#ff9800",
+          close: true
+        }).showToast()
+        return prev
+      }
+
       return [...prev, { ...product, qty: 1 }]
     })
   }
 
   const handleIncrement = (id: LineItem['id']) => {
     setCartItems((prev) =>
-      prev.map((item) =>
-        item.id === id ? { ...item, qty: item.qty + 1 } : item
-      )
+      prev.map((item) => {
+        if (item.id !== id) return item
+
+        const newQty = item.qty + 1
+        if (newQty > item.stock) {
+          Toastify({
+            text: `No hay suficiente stock. Stock disponible: ${item.stock}`,
+            duration: 3000,
+            gravity: "top",
+            position: "right",
+            backgroundColor: "#ff9800",
+            close: true
+          }).showToast()
+          return item
+        }
+
+        return { ...item, qty: newQty }
+      })
     )
   }
 
@@ -200,7 +242,33 @@ export default function POSPreview() {
 
       if (!res.ok) {
         console.error('Error creating sale:', responseBody)
-        alert(responseBody.error || 'Error al crear la venta')
+
+        const fieldErrors = responseBody?.error?.fieldErrors
+        if (fieldErrors && typeof fieldErrors === 'object') {
+          Object.entries(fieldErrors).forEach(([field, messages]) => {
+            (messages as string[]).forEach(msg => {
+              Toastify({
+                text: `${field}: ${msg}`,
+                duration: 3000,
+                gravity: "top",
+                position: "right",
+                backgroundColor: "#ff0000",
+                close: true
+              }).showToast()
+            })
+          })
+        } else {
+          // mensaje genérico si no hay fieldErrors
+          Toastify({
+            text: responseBody?.error?.message || 'Error al crear la venta',
+            duration: 3000,
+            gravity: "top",
+            position: "right",
+            backgroundColor: "#ff0000",
+            close: true
+          }).showToast()
+        }
+
         return
       }
 
@@ -215,7 +283,6 @@ export default function POSPreview() {
       }
     } catch (err) {
       console.error('Error en submitSale:', err)
-      alert('Error al procesar la venta')
     }
   }
   return (

@@ -2,7 +2,6 @@ import NextAuth from 'next-auth/next';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import bcrypt from 'bcrypt';
 import db from '../../../../lib/pg'
-import { UsuarioType } from '@/types/db'; 
 
 const authOptions = {
     providers: [

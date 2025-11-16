@@ -1,9 +1,8 @@
 import { NextResponse } from 'next/server';
 import bcrypt from 'bcrypt';
 import db from "@/lib/pg";
-import UsuarioType from "@/types/db"
 
-// --- FUNCIÓN DE VALIDACIÓN (Igual que antes) ---
+// --- FUNCIÓN DE VALIDACIÓN ---
 function validateUserInput(data: Partial<UsuarioType>, isCreate = true) {
     const errors: string[] = [];
 
@@ -42,7 +41,7 @@ export async function GET(req: Request) {
             }
 
             const user = result.rows[0] as UsuarioType;
-            const { password: _, ...safeUser } = user; // Quitar password
+            const { password: _, ...safeUser } = user;
 
             return NextResponse.json({ user: safeUser });
         } else {
@@ -133,7 +132,7 @@ export async function PATCH(req: Request) {
         }
         const currentUser = findResult.rows[0] as UsuarioType;
 
-        // 3. Verificar duplicado de email (si cambió)
+        // 3. Verificar duplicado de email
         if (email && email !== currentUser.email) {
             const duplicateCheck = 'SELECT id_usuario FROM usuario WHERE email = $1';
             const duplicateResult = await db.query(duplicateCheck, [email]);

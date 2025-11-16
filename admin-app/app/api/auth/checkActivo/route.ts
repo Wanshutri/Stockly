@@ -3,26 +3,11 @@ import { getToken } from 'next-auth/jwt'
 import db from '../../../../lib/pg'
 
 const ALLOWLIST_ADMIN = ['/', '/admin', '/profile', '/users']
-const ALLOWLIST_BODEGUERO = ['/', '/bodega', '/profile']
-const ALLOWLIST_VENDEDOR = ['/', '/ventas', '/profile']
-
-function getAllowedPathsByRole(id_tipo: number): string[] {
-  switch (id_tipo) {
-    case 1:
-      return ALLOWLIST_ADMIN
-    case 2:
-      return ALLOWLIST_VENDEDOR
-    case 3:
-      return ALLOWLIST_BODEGUERO
-    default:
-      return []
-  }
-}
 
 export async function GET(req: Request) {
   try {
     const token = await getToken({ req: req as any, secret: process.env.NEXTAUTH_SECRET })
-    
+
     if (!token || !token.id) {
       return NextResponse.json({ error: 'not_authenticated' }, { status: 401 })
     }
@@ -42,9 +27,8 @@ export async function GET(req: Request) {
     // ------------------------------------
 
     const urlHeader = req.headers.get('x-pathname') || '/'
-    const allowedPaths = getAllowedPathsByRole(user.id_tipo)
-    
-    const canAccess = allowedPaths.some(
+
+    const canAccess = ALLOWLIST_ADMIN.some(
       (p) => urlHeader === p || urlHeader.startsWith(p + '/')
     )
 

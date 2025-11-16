@@ -51,8 +51,8 @@ const DetalleCompraSchema = z.object({
 
 const CompraSchema = z.object({
     total: z.number().positive(),
-    monto_tarjeta: z.number().positive().optional().nullable(),
-    monto_efectivo: z.number().positive().optional().nullable(),
+    monto_tarjeta: z.number().nonnegative().optional().nullable(),
+    monto_efectivo: z.number().nonnegative().optional().nullable(),
     detalles: z.array(DetalleCompraSchema).min(1)
 });
 

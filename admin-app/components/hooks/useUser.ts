@@ -3,8 +3,6 @@
 import { useSession } from "next-auth/react";
 import { useCallback, useEffect, useState } from "react";
 
-import { UsuarioType } from "@/types/db";
-
 export default function useUser() {
     const [user, setUser] = useState<UsuarioType | null>(null); 
     const [loading, setLoading] = useState(false);

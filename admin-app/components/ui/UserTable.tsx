@@ -13,7 +13,6 @@ import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import NewUserModal from '../../components/forms/NewUserForm';
 import EditUserModal from '../../components/forms/EditUserForm';
 import DeleteUserModal from '../../components/forms/DeleteConfirmUser';
-import { User } from '../../../web-app/components/definitions/User'
 import useUser from '../hooks/useUser';
 
 export default function AdminDashboard() {

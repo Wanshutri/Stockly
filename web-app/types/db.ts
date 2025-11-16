@@ -29,10 +29,10 @@ interface UsuarioType {
     created_at?: Date;
 }
 
-interface DetalleRow {
-    sku: string;
-    producto: string;
-    precio: number;
-    cantidad: number;
-    total: number;
+interface User {
+    id: number;
+    nombre: string;
+    email: string;
+    rol: 'Admin' | 'Vendedor' | 'Bodeguero';
+    estado: 'Activo' | 'Inactivo';
 }
