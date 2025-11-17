@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
 import IconButton from '@mui/material/IconButton';
 import Tooltip from '@mui/material/Tooltip';
 import Button from '@mui/material/Button';
@@ -35,7 +34,7 @@ export default function AdminDashboard() {
             // Mapeo de roles (ID -> Nombre)
             const roleMapReverse: { [key: number]: string } = { 1: 'Admin', 2: 'Vendedor', 3: 'Bodeguero' };
 
-            // Transformar datos de la API al formato de nuestra tabla UI
+            // Transformar datos de la API al formato de la tabla UI
             const mappedUsers: User[] = data.users.map((u: any) => ({
                 id: u.id_usuario,
                 nombre: u.nombre,

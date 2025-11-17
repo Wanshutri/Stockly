@@ -1,6 +1,6 @@
 'use client'
 import React from 'react'
-import cn from '../hooks/cn'
+import cn from '../../hooks/cn'
 
 const currencyFormatter = (currency: string) =>
   new Intl.NumberFormat('es-CL', {

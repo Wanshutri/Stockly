@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import db from "@/lib/pg";
 import z from "zod";
+import { DateTime } from "luxon";
 
 const CategoriaSchema = z.object({
     id_categoria: z.number().int().positive(),
@@ -45,15 +46,26 @@ const productoSchema = z.object({
 
 const DetalleCompraSchema = z.object({
     producto: productoSchema,
-    cantidad: z.number().int().positive(),
-    subtotal: z.number().nonnegative(),
-})
+    cantidad: z.number()
+        .int("La cantidad debe ser un número entero")
+        .positive("La cantidad debe ser mayor a 0"),
+    subtotal: z.number()
+        .nonnegative("El subtotal no puede ser negativo"),
+});
 
 const CompraSchema = z.object({
-    total: z.number().positive(),
-    monto_tarjeta: z.number().nonnegative().optional().nullable(),
-    monto_efectivo: z.number().nonnegative().optional().nullable(),
-    detalles: z.array(DetalleCompraSchema).min(1)
+    total: z.number()
+        .positive("El total debe ser mayor a 0"),
+    monto_tarjeta: z.number()
+        .nonnegative("El monto con tarjeta no puede ser negativo")
+        .optional()
+        .nullable(),
+    monto_efectivo: z.number()
+        .nonnegative("El monto en efectivo no puede ser negativo")
+        .optional()
+        .nullable(),
+    detalles: z.array(DetalleCompraSchema)
+        .min(1, "Debe existir al menos un detalle"),
 });
 
 export async function GET() {
@@ -76,7 +88,14 @@ export async function POST(request: Request) {
         const body = await request.json();
         const parse = CompraSchema.safeParse(body);
 
-        if (!parse.success) return NextResponse.json({ error: parse.error.flatten() }, { status: 400 });
+        if (!parse.success) {
+            const formatted = parse.error.issues.map(i => i.message);
+
+            return NextResponse.json(
+                { errors: formatted },
+                { status: 400 }
+            );
+        }
 
         // Insert en Compras
 
@@ -138,6 +157,19 @@ export async function POST(request: Request) {
 
         const resultDetalleCompra = await db.query(queryDetalleCompra, values);
         const insertedDetalleCompraRow = resultDetalleCompra.rows;
+
+        // Bulk update de stock (alternativa simple)
+        const skus = parse.data.detalles.map(d => d.producto.sku);
+        const cantidades = parse.data.detalles.map(d => d.cantidad);
+
+        const queryUpdateStock = `
+            UPDATE producto p
+            SET stock = p.stock - u.cantidad
+            FROM (SELECT unnest($1::text[]) as sku, unnest($2::integer[]) as cantidad) u
+            WHERE p.sku = u.sku
+        `;
+
+        await db.query(queryUpdateStock, [skus, cantidades]);
 
         await db.query("COMMIT");
 

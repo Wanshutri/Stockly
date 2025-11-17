@@ -1,5 +1,5 @@
 "use client";
-import React, { useMemo } from "react";
+import { useMemo } from "react";
 
 interface PagarButtonProps {
     total?: number;
@@ -26,7 +26,7 @@ export default function PagarButton({
     const suma = useMemo<number>(() => efe + tar, [efe, tar]);
     const isExact: boolean = ttl > 0 && suma === ttl;
     const isOver: boolean = suma > ttl;
-    const isEmpty: boolean = ttl === 0 || (efe === 0 && tar === 0);
+    const faltante = useMemo<number>(() => Math.max(0, ttl - suma), [ttl, suma]);
 
     const handleClick = (): void => {
         if (disabled) return;
@@ -44,6 +44,9 @@ export default function PagarButton({
                     Ingresado: <strong>{fmt(suma)} {currency}</strong>
                     {isExact && <span className="ml-2 text-green-600 font-medium">✔ coincide</span>}
                     {isOver && <span className="ml-2 text-red-600 font-medium">✖ excede ({fmt(suma - ttl)})</span>}
+                    {faltante > 0 && (
+                       <span className="ml-2 text-yellow-700 font-medium">• Falta: {fmt(faltante)} {currency}</span>
+                   )}
                 </div>
             </div>
 

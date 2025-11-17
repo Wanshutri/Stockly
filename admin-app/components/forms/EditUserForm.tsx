@@ -11,16 +11,6 @@ import MenuItem from '@mui/material/MenuItem';
 import CircularProgress from '@mui/material/CircularProgress';
 import Alert from '@mui/material/Alert';
 
-// Asumimos que la definición de User (para la UI/tabla) es algo así:
-// Esta NO es la 'UsuarioType' de la base de datos.
-export interface User {
-    id: number;
-    nombre: string;
-    email: string;
-    rol: 'Admin' | 'Vendedor' | 'Bodeguero';
-    estado: 'Activo' | 'Inactivo';
-}
-
 interface Props {
     open: boolean;
     onClose: () => void;
@@ -55,13 +45,11 @@ export default function EditUserModal({ open, onClose, userToEdit, onUpdate }: P
 
         const payload: any = {
             nombre: formData.nombre,
-            // En el API se espera `id_tipo` (snake_case). Enviar ese campo.
             id_tipo: roleMap[formData.rol as string] ?? roleMap['Vendedor'],
             activo: formData.estado === 'Activo'
         };
 
         if (formData.password && formData.password.trim() !== '') {
-            // Validamos la contraseña nueva
             if (formData.password.trim().length < 6) {
                 setError('La nueva contraseña debe tener al menos 6 caracteres.');
                 setLoading(false);
@@ -123,7 +111,7 @@ export default function EditUserModal({ open, onClose, userToEdit, onUpdate }: P
                         onChange={handleChange}
                         disabled={loading}
                         placeholder="Dejar en blanco para no cambiar"
-                        helperText="Mínimo 6 caracteres si se modifica" // Helper text actualizado
+                        helperText="Mínimo 6 caracteres si se modifica"
                     />
                 </div>
             </DialogContent>

@@ -1,6 +1,6 @@
 import { useEffect, useState, cloneElement } from "react";
 import { DataGrid, GridColDef, GridRowSelectionModel } from "@mui/x-data-grid";
-import TableToolbar from "./TableToolBar";
+import TableToolbar from "../TableToolBar";
 import {
     Box,
     CircularProgress,
@@ -16,7 +16,7 @@ interface GenericTableProps {
     formulario: React.ReactElement<any>;
 }
 
-export default function MarcaTable({
+export default function ProductoTable({
     columnsDef,
     formulario
 }: GenericTableProps) {
@@ -59,24 +59,30 @@ export default function MarcaTable({
 
     const fetchData = async () => {
         try {
-            const res = await fetch("/api/marcas");
+            const res = await fetch("/api/productos");
 
             if (!res.ok) {
-                throw new Error("Error al obtener marcas");
+                throw new Error("Error al obtener productos");
             }
 
-            const data: Marca[] = await res.json();
+            const data: Producto[] = await res.json();
 
-            const ms = data.map((m: Marca) => {
+            const ps = data.map((p: Producto) => {
                 return {
-                    id_marca : m.id_marca,
-                    nombre_marca : m.nombre_marca
+                    sku: p.sku,
+                    nombre: p.nombre,
+                    precio_compra: p.precio_compra,
+                    gtin: p.gtin,
+                    precio_venta: p.precio_venta,
+                    stock: p.stock,
+                    tipo_categoria: p.categoria.nombre_categoria,
+                    marca: p.marca.nombre_marca
                 };
             });
 
-            setRows(ms);
+            setRows(ps);
         } catch (error) {
-            console.error("Error cargando marcas:", error);
+            console.error("Error cargando productos:", error);
         } finally {
             setLoading(false);
         }
@@ -104,7 +110,7 @@ export default function MarcaTable({
             <div style={{ height: 600, width: "100%" }}>
                 <DataGrid
                     rows={rows}
-                    getRowId={(row) => row.id_marca}
+                    getRowId={(row) => row.sku}
                     columns={columnsWithAction}
                     checkboxSelection
                     disableRowSelectionOnClick
@@ -117,9 +123,9 @@ export default function MarcaTable({
                                 rowsSelected={selectedRows}
                                 handleUpdate={handleUpdate}
                                 formulario={formulario}
-                                title={"Marca"}
-                                url={"api/marcas"}
-                                deletionKey={"id_marca"}
+                                title={"Producto"}
+                                url={"api/productos"}
+                                deletionKey={"sku"}
                             />
                         ),
                     }}
@@ -129,8 +135,7 @@ export default function MarcaTable({
                         const selectedIDs = Array.from(newSelectionModel.ids || []);
 
                         // Filter your original 'rows' data to get the complete selected row objects
-                        console.log(selectedIDs)
-                        const selectedRows = rows.filter((row) => selectedIDs.includes(row.id_marca));
+                        const selectedRows = rows.filter((row) => selectedIDs.includes(row.sku));
 
                         setSelectedRows(selectedRows)
                     }}
@@ -141,7 +146,7 @@ export default function MarcaTable({
             <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
                 <DialogTitle>Detalles</DialogTitle>
                 <DialogContent>
-                    {cloneElement(formulario as React.ReactElement<{ item: Marca; onSuccess?: () => void }>, {
+                    {cloneElement(formulario as React.ReactElement<{ item: Producto; onSuccess?: () => void }>, {
                         item: selectedItem, // si es undefined, no pasa nada
                         onSuccess: () => {
                             handleUpdate(); // refresca tabla

@@ -11,7 +11,7 @@ import { useRef, useState, cloneElement, isValidElement } from 'react';
 import DeleteIcon from '@mui/icons-material/Delete';
 import OpenPopUp from '../forms/DeleteConfirmUser';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
-import BodegaNewItemButton from '../ui/BodegaNewItemButton';
+import BodegaNewItemButton from './bodega/BodegaNewItemButton';
 
 interface TableToolbarProps {
     rowsSelected: any[];

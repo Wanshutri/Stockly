@@ -8,9 +8,9 @@ import { categoriasColumns, marcaColumns, productColumns, } from "@/components/d
 import ProductForm from '../forms/ProductForm';
 import MarcaForm from '../forms/MarcaForm';
 import CategoriaForm from '../forms/CategoriaForm';
-import ProductoTable from '../ui/BodegaTableProductos';
-import MarcaTable from '../ui/BodegaTableMarcas';
-import CategoriaTable from '../ui/BodegaTableCategorias';
+import ProductoTable from '../ui/bodega/BodegaTableProductos';
+import MarcaTable from '../ui/bodega/BodegaTableMarcas';
+import CategoriaTable from '../ui/bodega/BodegaTableCategorias';
 
 interface TabPanelProps {
     children?: React.ReactNode;

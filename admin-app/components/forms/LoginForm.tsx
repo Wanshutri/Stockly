@@ -1,22 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 // Se eliminan 'getSession' y 'signOut' porque ya no se usan aquí
 import { signIn, type SignInResponse } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import React from "react"; 
-import Link from "next/link"; 
+import React from "react";
 
 // --- Iconos ---
-import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings'; 
-import MailIcon from '@mui/icons-material/Mail'; 
-import LockIcon from '@mui/icons-material/Lock'; 
+import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
+import MailIcon from '@mui/icons-material/Mail';
+import LockIcon from '@mui/icons-material/Lock';
 
 const SpinnerIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" {...props}>
-    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-  </svg>
+    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" {...props}>
+        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+    </svg>
 );
 // ---
 
@@ -26,6 +25,12 @@ export default function LoginForm() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const router = useRouter();
+
+    useEffect(() => {
+        if (status === "authenticated") {
+            router.replace("/"); // redirige apenas la sesión está lista
+        }
+    }, [router]);
 
     async function onSubmit(e: React.FormEvent) {
         e.preventDefault();
@@ -50,21 +55,23 @@ export default function LoginForm() {
             return;
         }
 
-        // 3. ¡ÉXITO! Redirigir directamente al home.
-        // Se eliminó la validación de rol.
-        router.push("/");
-        router.refresh();
+        setTimeout(() => {
+            if (status !== "authenticated") {
+                // forzar recarga completa — rompe SPA pero útil como fallback
+                window.location.href = "/";
+            }
+        }, 200);
     }
 
     return (
-        <form 
-            onSubmit={onSubmit} 
+        <form
+            onSubmit={onSubmit}
             className="w-full max-w-md bg-white p-8 sm:p-10 rounded-2xl shadow-xl border border-gray-100"
         >
             <div className="text-center mb-10">
                 <div className="flex justify-center mb-4">
                     <div className="bg-blue-100 p-3 rounded-full">
-                        <AdminPanelSettingsIcon className="w-8 h-8 text-blue-600" /> 
+                        <AdminPanelSettingsIcon className="w-8 h-8 text-blue-600" />
                     </div>
                 </div>
                 <h2 className="text-2xl font-bold tracking-tight text-gray-900">
@@ -76,7 +83,7 @@ export default function LoginForm() {
             </div>
             <div className="space-y-6">
                 <div>
-                    <label 
+                    <label
                         htmlFor="email"
                         className="block text-sm font-medium text-gray-700"
                     >
@@ -104,7 +111,7 @@ export default function LoginForm() {
 
                 <div>
                     <div className="flex justify-between">
-                        <label 
+                        <label
                             htmlFor="password"
                             className="block text-sm font-medium text-gray-700"
                         >
@@ -136,7 +143,7 @@ export default function LoginForm() {
                         {error}
                     </div>
                 )}
-                
+
                 <button
                     type="submit"
                     disabled={loading}

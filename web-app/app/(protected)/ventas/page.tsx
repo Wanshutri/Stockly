@@ -3,12 +3,12 @@ import "toastify-js/src/toastify.css"
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
 import { useSession } from 'next-auth/react'
-import { VentaTable, LineItem } from '@/components/ui/VentaTable'
-import { TableFooterSummary } from '@/components/ui/VentaTableFooter'
-import { CashierCard } from '@/components/ui/VentaCashierCard'
-import { SearchProductCard, SearchProductResult } from '@/components/ui/VentaSearchProductCard'
-import VentasPagosCard from '@/components/ui/VentasPagosCard'
-import PagarButton from '@/components/ui/PagarButton'
+import { VentaTable, LineItem } from '@/components/ui/venta/VentaTable'
+import { TableFooterSummary } from '@/components/ui/venta/VentaTableFooter'
+import { CashierCard } from '@/components/ui/venta/VentaCashierCard'
+import { SearchProductCard, SearchProductResult } from '@/components/ui/venta/VentaSearchProductCard'
+import VentasPagosCard from '@/components/ui/venta/VentasPagosCard'
+import PagarButton from '@/components/ui/venta/PagarButton'
 import useUser from '@/components/hooks/useUser'
 import Toastify from 'toastify-js'
 
@@ -260,7 +260,7 @@ export default function POSPreview() {
         } else {
           // mensaje genérico si no hay fieldErrors
           Toastify({
-            text: responseBody?.error?.message || 'Error al crear la venta',
+            text: responseBody?.errors || 'Error al crear la venta',
             duration: 3000,
             gravity: "top",
             position: "right",
@@ -268,19 +268,22 @@ export default function POSPreview() {
             close: true
           }).showToast()
         }
-
         return
       }
-
+      // La venta ocurrio correctamente
       setCartItems([])
-      setMontoEfectivo(0)
-      setMontoTarjeta(0)
-      const ventaId = responseBody?.venta?.id_compra
-      if (ventaId) {
-        router.push(`/ventas/${ventaId}`)
-      } else {
-        router.push('/ventas')
-      }
+
+
+      Toastify({
+        text: '¡Venta Ingresada Correctamente!',
+        duration: 3000,
+        gravity: "top",
+        position: "right",
+        backgroundColor: "#00ff7f",
+        close: true
+      }).showToast()
+      return
+
     } catch (err) {
       console.error('Error en submitSale:', err)
     }

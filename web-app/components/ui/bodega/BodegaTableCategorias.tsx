@@ -1,6 +1,6 @@
 import { useEffect, useState, cloneElement } from "react";
 import { DataGrid, GridColDef, GridRowSelectionModel } from "@mui/x-data-grid";
-import TableToolbar from "./TableToolBar";
+import TableToolbar from "../TableToolBar";
 import {
     Box,
     CircularProgress,

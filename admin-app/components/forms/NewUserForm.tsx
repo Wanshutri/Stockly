@@ -6,20 +6,10 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
-import DialogContentText from '@mui/material/DialogContentText';
 import MenuItem from '@mui/material/MenuItem';
 import CircularProgress from '@mui/material/CircularProgress';
 import Alert from '@mui/material/Alert';
-
-// Asumimos que la definición de User (para la UI/tabla) es algo así:
-// Esta NO es la 'UsuarioType' de la base de datos.
-export interface User {
-    id: number;
-    nombre: string;
-    email: string;
-    rol: 'Admin' | 'Vendedor' | 'Bodeguero';
-    estado: 'Activo' | 'Inactivo';
-}
+import DialogContentText from '@mui/material/DialogContentText';
 
 interface Props {
     open: boolean;
@@ -28,7 +18,7 @@ interface Props {
 }
 
 export default function CreateUserModal({ open, onClose, onCreate }: Props) {
-    // 1. Estado inicial actualizado (sin 'estado')
+    // 1. Estado inicial actualizado
     const initialFormState = { nombre: '', email: '', rol: 'Vendedor', password: '' };
     const [formData, setFormData] = useState(initialFormState);
     const [loading, setLoading] = useState(false);
@@ -48,7 +38,6 @@ export default function CreateUserModal({ open, onClose, onCreate }: Props) {
         setLoading(true);
         setError('');
 
-        // Mapeo de roles de UI a IDs de tu DB
         const roleMap: { [key: string]: number } = { 'Admin': 1, 'Vendedor': 2, 'Bodeguero': 3 };
 
         try {
@@ -77,7 +66,7 @@ export default function CreateUserModal({ open, onClose, onCreate }: Props) {
                     nombre: data.user.nombre,
                     email: data.user.email,
                     rol: formData.rol as any,
-                    estado: 'Activo' // Lo definimos como Activo en la UI
+                    estado: 'Activo'
                 };
                 onCreate(newUserForTable);
                 handleClose();

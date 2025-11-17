@@ -1,5 +1,5 @@
 "use client"
-import useUser from '../hooks/useUser';
+import useUser from '../../hooks/useUser';
 
 export default function HomeStart() {
 

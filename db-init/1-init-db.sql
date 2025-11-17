@@ -58,9 +58,9 @@ CREATE TABLE producto (
 CREATE TABLE compra (
     id_compra SERIAL PRIMARY KEY,
     fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    total DECIMAL(10, 2) NOT NULL CHECK (total >= 0),
-    monto_tarjeta DECIMAL(10, 2) CHECK (monto_tarjeta >= 0),
-    monto_efectivo DECIMAL(10, 2) CHECK (monto_efectivo >= 0)
+    total INT NOT NULL CHECK (total >= 0),
+    monto_tarjeta INT CHECK (monto_tarjeta >= 0),
+    monto_efectivo INT CHECK (monto_efectivo >= 0)
 );
 
 -- ============================================

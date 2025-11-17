@@ -14,7 +14,7 @@ export async function GET(req: Request) {
 
     const id = Number(token.id)
 
-    // --- CAMBIO: CONSULTA SQL DIRECTA ---
+    // --- CONSULTA SQL DIRECTA ---
     const query = 'SELECT id_usuario, activo, id_tipo FROM usuario WHERE id_usuario = $1'
     const result = await db.query(query, [id])
 

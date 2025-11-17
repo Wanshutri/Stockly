@@ -1,12 +1,12 @@
 import Link from 'next/link';
-import HomeStart from "@/components/ui/HomeStart";
-import HomeAccess from "@/components/ui/HomeAccess"; // Asegúrate de que esta ruta sea correcta
+import HomeStart from "@/components/ui/home/HomeStart";
+import HomeAccess from "@/components/ui/home/HomeAccess"; // Asegúrate de que esta ruta sea correcta
 
 // SI ESTOS ICONOS FALLAN, COMENTALOS Y USA TEXTO TEMPORALMENTE
 import StoreIcon from '@mui/icons-material/Store';
 import InventoryIcon from '@mui/icons-material/Inventory';
-import HomeVentas from '@/components/ui/HomeVentas';
-import HomeStock from '@/components/ui/HomeStock';
+import HomeVentas from '@/components/ui/home/HomeVentas';
+import HomeStock from '@/components/ui/home/HomeStock';
 
 export default function Home() {
 

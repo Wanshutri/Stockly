@@ -8,6 +8,7 @@ interface UsuarioType {
     created_at?: Date;
 }
 
+// Tipo usado en la tabla de usuarios y en el formulario de crear usuario //
 interface User {
     id: number;
     nombre: string;

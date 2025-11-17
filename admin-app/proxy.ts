@@ -3,7 +3,8 @@ import type { NextRequest } from "next/server";
 
 const publicPaths = [
   "/login",
-  "/public"
+  "/public",
+  "/api"
 ];
 
 // Admin SOLO con rutas exclusivas

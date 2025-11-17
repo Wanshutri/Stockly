@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import cn from "../hooks/cn";
+import cn from "../../hooks/cn";
 
 const currencyFormatter = new Intl.NumberFormat("es-CL", {
   style: "currency",

@@ -15,8 +15,8 @@ import Toolbar from "@mui/material/Toolbar";
 import Typography from "@mui/material/Typography";
 import { useState, useEffect, useMemo } from "react";
 import { signOut } from "next-auth/react";
-import Navuserwrapper from "../ui/Navuserwrapper";
-import Navlink from "../ui/Navlink";
+import Navuserwrapper from "../ui/nav/Navuserwrapper";
+import Navlink from "../ui/nav/Navlink";
 import Link from "next/link";
 import useUser from "../hooks/useUser";
 

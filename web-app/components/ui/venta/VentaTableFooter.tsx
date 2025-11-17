@@ -1,4 +1,4 @@
-import cn from "../hooks/cn";
+import cn from "../../hooks/cn";
 /*************************
  * Shared helpers
  *************************/
