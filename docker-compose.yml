@@ -27,6 +27,7 @@ services:
       - db
       - webapp
     environment:
+      NEXTAUTH_URL: ${NEXTAUTH_URL_ADMIN}
       NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
       DB_HOST: db
       DB_PORT: 5432
@@ -47,6 +48,7 @@ services:
       - db
     environment:
       NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
+      NEXTAUTH_URL: ${NEXTAUTH_URL}
       DB_HOST: db
       DB_PORT: 5432
       DB_DATABASE: ${DB_DATABASE}

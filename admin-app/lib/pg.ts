@@ -4,7 +4,11 @@ class PostgresDB {
     private static instance: PostgresDB;
     private pool: Pool;
 
+
     private constructor() {
+
+        this.printConnectionInfo();
+
         this.pool = new Pool({
             user: process.env.DB_USER,
             host: process.env.DB_HOST,
@@ -14,6 +18,16 @@ class PostgresDB {
         });
 
         this.connectWithRetry(5, 2000); // 2 intentos, 5s de retraso
+    }
+
+    // Imprimir los datos de conexion
+    private printConnectionInfo() {
+        console.log("PostgreSQL Connection Info:", {
+            user: process.env.DB_USER,
+            host: process.env.DB_HOST,
+            database: process.env.DB_DATABASE,
+            port: Number(process.env.DB_PORT) || 5432
+        });
     }
 
     private async connectWithRetry(retries: number, delayMs: number) {
